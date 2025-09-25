@@ -17,15 +17,18 @@ from datetime import datetime, timedelta
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
     application_path = os.path.dirname(sys.executable)
-    template_dir = os.path.join(application_path, 'templates')
-    static_dir = os.path.join(application_path, 'static')
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    bundle_dir = getattr(sys, '_MEIPASS', application_path)
+    template_dir = os.path.join(bundle_dir, 'templates')
+    static_dir = os.path.join(bundle_dir, 'static')
 else:
     # Running as script
     application_path = os.path.dirname(os.path.abspath(__file__))
+    bundle_dir = application_path
     template_dir = os.path.join(application_path, 'templates')
     static_dir = os.path.join(application_path, 'static')
 
-# Change to the application directory
+# Change to the application directory (for data files like pilas.json)
 os.chdir(application_path)
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)

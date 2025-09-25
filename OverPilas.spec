@@ -9,7 +9,6 @@ a = Analysis(
     datas=[
         ('templates', 'templates'),
         ('static', 'static'),
-        ('pilas.json', '.'),
     ],
     hiddenimports=[
         'flask',
