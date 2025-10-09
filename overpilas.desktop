@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=OverPilas
+Comment=Battery Management Application
+Exec=/opt/overpilas/OverPilas
+Icon=/opt/overpilas/logo.png
+Terminal=false
+StartupNotify=true
+Categories=Utility;Science;
+Keywords=battery;pilas;management;carga;
+MimeType=
+StartupWMClass=OverPilas
