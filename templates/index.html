@@ -240,6 +240,109 @@
             border-radius: 10px;
             object-fit: cover;
         }
+        
+        /* Tabs - barra de navegación tipo página */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px 0 20px 0;
+        }
+
+        .tab {
+            padding: 8px 14px;
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(180deg, #F3F0FF, #EDE9FE);
+            border: 2px solid #D6BBFF;
+            color: #4B0082;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .tab.active {
+            background: linear-gradient(180deg, #FFFFFF, #F8F7FF);
+            border-bottom: 2px solid transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .tab-panel {
+            display: block;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+        }
+
+        /* Matches placeholder styling */
+        .matches-content {
+            background: #FFFFFF;
+            border: 2px dashed #C7D2FE;
+            padding: 30px;
+            border-radius: 10px;
+            color: #374151;
+        }
+        /* Next match banner (pastel colors) */
+        #next-match-box {
+            border-radius: 10px;
+            padding: 18px;
+            color: inherit;
+        }
+        /* (match-enviada control will be injected into the Next Match card) */
+    #next-match-box table { width:100%; border-collapse: collapse; margin-top:10px; }
+    #next-match-box th, #next-match-box td { padding:10px; border: 1px solid rgba(0,0,0,0.06); text-align:center; }
+        #next-match-box .alliances { display:flex; gap:20px; justify-content:space-between; margin-top:8px; }
+        #next-match-box .pila-uso { margin-top:14px; font-size:16px; font-weight:bold; text-align:center; }
+        /* Modal de login */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 320px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            text-align: left;
+        }
+
+        .modal-box h3 { margin-top: 0; color: #4B0082; }
+        .modal-input { width: 100%; padding: 8px; margin: 8px 0; border-radius: 6px; border: 1px solid #E6E6FA; }
+        .modal-actions { display:flex; justify-content: flex-end; gap:8px; margin-top:10px; }
+        .matches-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .matches-form input, .matches-form textarea {
+            padding: 8px;
+            border: 1px solid #E6E6FA;
+            border-radius: 6px;
+        }
+
+        .match-card {
+            background: #F8FAFC;
+            border: 1px solid #E6E9FF;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-details { text-align: left; }
+
+        .match-actions button { margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -256,9 +359,21 @@
     <!-- Imagen superior derecha -->
     <img src="/static/logo.png" alt="Logo" class="imagen-superior" onerror="this.style.display='none'">
 
-    <h1>🔋 Registro de Pilas 🔋</h1>
+    <h1 id="main-title">🔋 Registro de Pilas 🔋</h1>
 
-    <div class="formularios-container">
+    <!-- Pestañas -->
+    <div class="tabs" role="tablist">
+        <div class="tab active" data-target="panel-pilas" role="tab" aria-selected="true">Pilas</div>
+        <div class="tab" data-target="panel-matches" role="tab" aria-selected="false">Matches</div>
+    </div>
+
+    <div class="tab-panel" id="panel-pilas" role="tabpanel">
+        <!-- Next match banner (full width) -->
+        <div id="next-match" style="width:100%; margin-bottom:20px; display:none;">
+            <!-- Se llenará por JS -->
+        </div>
+
+        <div class="formularios-container">
         <div class="registro-section">
             <h2>Registrar Pila 📝</h2>
             <form action="/agregar" method="post">
@@ -364,62 +479,117 @@
                 <button type="submit">Marcar como recibida</button>
             </form>
         </div>
-    </div>
+        </div>
 
-    <div class="tablas-container">
-        <div class="tabla-section">
-            <h2>Listado de Pilas</h2>
-            <table>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Carga</th>
-                    <th>Ohms</th>
-                </tr>
-                {% for pila in pilas %}
-                <tr>
-                    <td>{{ pila.nombre }}</td>
-                    {% if pila.nombre == pila_en_uso %}
-                        <td class="en-uso">En uso</td>
-                        <td class="en-uso">En uso</td>
-                    {% elif pila.nombre in pilas_en_cooldown %}
-                        {% set cooldown_time = pilas_en_cooldown[pila.nombre] %}
-                        {% set is_ready = False %}
-                        {% for pila_lista in pilas_listas %}
-                            {% if pila_lista.nombre == pila.nombre %}
-                                {% set is_ready = True %}
+        <div class="tablas-container">
+            <div class="tabla-section">
+                <h2>Listado de Pilas</h2>
+                <table>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Carga</th>
+                        <th>Ohms</th>
+                    </tr>
+                    {% for pila in pilas %}
+                    <tr>
+                        <td>{{ pila.nombre }}</td>
+                        {% if pila.nombre == pila_en_uso %}
+                            <td class="en-uso">En uso</td>
+                            <td class="en-uso">En uso</td>
+                        {% elif pila.nombre in pilas_en_cooldown %}
+                            {% set cooldown_time = pilas_en_cooldown[pila.nombre] %}
+                            {% set is_ready = False %}
+                            {% for pila_lista in pilas_listas %}
+                                {% if pila_lista.nombre == pila.nombre %}
+                                    {% set is_ready = True %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if is_ready %}
+                                <td class="lista-conectar">Lista para conectar</td>
+                                <td class="lista-conectar">Lista para conectar</td>
+                            {% else %}
+                                <td class="en-cooldown">En cooldown</td>
+                                <td class="en-cooldown">En cooldown</td>
                             {% endif %}
-                        {% endfor %}
-                        {% if is_ready %}
+                        {% elif pila.carga == "Sin datos" %}
                             <td class="lista-conectar">Lista para conectar</td>
                             <td class="lista-conectar">Lista para conectar</td>
                         {% else %}
-                            <td class="en-cooldown">En cooldown</td>
-                            <td class="en-cooldown">En cooldown</td>
+                            <td>{{ pila.carga }}</td>
+                            <td>{{ pila.ohms }}</td>
                         {% endif %}
-                    {% elif pila.carga == "Sin datos" %}
-                        <td class="lista-conectar">Lista para conectar</td>
-                        <td class="lista-conectar">Lista para conectar</td>
-                    {% else %}
-                        <td>{{ pila.carga }}</td>
-                        <td>{{ pila.ohms }}</td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </table>
-        </div>
-
-        <div class="tabla-section">
-            <h2>Pilas Listas para Conectar</h2>
-            {% if pilas_listas %}
-                <p style="color: #4B0082; font-weight: bold; margin-bottom: 15px;">Orden por tiempo sin conectar (más antiguos primero):</p>
-                <ol style="color: #4B0082; text-align: left; font-weight: bold; font-size: 16px; line-height: 1.8;">
-                    {% for pila_lista in pilas_listas %}
-                        <li style="margin: 10px 0; padding: 8px; background-color: #E6E0F8; border-radius: 5px; border-left: 4px solid #9370DB;">{{ pila_lista.nombre }}</li>
+                    </tr>
                     {% endfor %}
-                </ol>
-            {% else %}
-                <p style="color: #6B7280; font-style: italic; text-align: center; margin-top: 40px;">No hay pilas listas para conectar en este momento.</p>
-            {% endif %}
+                </table>
+            </div>
+
+            <div class="tabla-section">
+                <h2>Pilas Listas para Conectar</h2>
+                {% if pilas_listas %}
+                    <p style="color: #4B0082; font-weight: bold; margin-bottom: 15px;">Orden por tiempo sin conectar (más antiguos primero):</p>
+                    <ol style="color: #4B0082; text-align: left; font-weight: bold; font-size: 16px; line-height: 1.8;">
+                        {% for pila_lista in pilas_listas %}
+                            <li style="margin: 10px 0; padding: 8px; background-color: #E6E0F8; border-radius: 5px; border-left: 4px solid #9370DB;">{{ pila_lista.nombre }}</li>
+                        {% endfor %}
+                    </ol>
+                {% else %}
+                    <p style="color: #6B7280; font-style: italic; text-align: center; margin-top: 40px;">No hay pilas listas para conectar en este momento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-matches" role="tabpanel" style="display:none;">
+        <div class="matches-content">
+            <h2>Match</h2>
+            <div class="matches-form">
+                <button id="add-match">Agregar</button>
+            </div>
+
+            <div id="matches-list">
+                <!-- Cards de matches aparecerán aquí -->
+            </div>
+
+            <div style="margin-top:12px; text-align:center;">
+                <button id="clear-matches">Limpiar todos los matches</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de login para Matches -->
+    <div id="login-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Acceso a Matches</h3>
+            <p>Ingresa credenciales</p>
+            <input id="login-user" class="modal-input" placeholder="Usuario" />
+            <input id="login-pass" type="password" class="modal-input" placeholder="Contraseña" />
+            <div class="modal-actions">
+                <button id="login-cancel">Cancelar</button>
+                <button id="login-ok">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar match (3 rojos, 3 azules) -->
+    <div id="addmatch-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Agregar Match</h3>
+            <p>
+                <label style="font-weight:bold;">Número de match: <input id="match-number" class="modal-input" placeholder="Ej: 1" style="width:120px; display:inline-block; margin-left:8px;" /></label>
+            </p>
+            <p>Referencia: <strong>7421</strong></p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <input id="r1" class="modal-input" type="number" placeholder="Red 1" />
+                <input id="r2" class="modal-input" type="number" placeholder="Red 2" />
+                <input id="r3" class="modal-input" type="number" placeholder="Red 3" />
+                <input id="b1" class="modal-input" type="number" placeholder="Blue 1" />
+                <input id="b2" class="modal-input" type="number" placeholder="Blue 2" />
+                <input id="b3" class="modal-input" type="number" placeholder="Blue 3" />
+            </div>
+            <div class="modal-actions">
+                <button id="addmatch-cancel">Cancelar</button>
+                <button id="addmatch-ok">Guardar</button>
+            </div>
         </div>
     </div>
 
@@ -430,6 +600,45 @@
     <button class="info-btn" onclick="mostrarInformacion()">ℹ️ Información</button>
 
     <script>
+        // Tabs logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Desactivar todas
+                    tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+
+                    // Si la pestaña es matches, verificar auth
+                    const target = tab.getAttribute('data-target');
+                    if (target === 'panel-matches'){
+                        const authed = sessionStorage.getItem('overpilas_matches_auth') === '1';
+                        if (!authed){
+                            // Mostrar modal de login
+                            document.getElementById('login-modal').style.display = 'flex';
+                            // no activar la tab aún
+                            return;
+                        }
+                    }
+
+                    // Ocultar paneles
+                    document.querySelectorAll('.tab-panel').forEach(panel => panel.style.display = 'none');
+
+                    // Activar seleccionado
+                    tab.classList.add('active');
+                    tab.setAttribute('aria-selected', 'true');
+                    const panel = document.getElementById(target);
+                    if (panel) panel.style.display = 'block';
+
+                    // Cambiar título principal según pestaña
+                    const mainTitle = document.getElementById('main-title');
+                    if(mainTitle){
+                        if(target === 'panel-matches') mainTitle.textContent = '📝 Registro de Matches 📝';
+                        else mainTitle.textContent = '🔋 Registro de Pilas 🔋';
+                    }
+                });
+            });
+        });
+
         function confirmarReiniciar() {
             if (confirm("⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos?\n\n\n\n ⚠️ No deberías hacerlo por nada en teoría ⚠️\n• ")) {
                 // Si el usuario confirma, enviar formulario
@@ -464,10 +673,219 @@ Dudas, comentarios o sugerencias me pueden decir (Rigo)
 
             alert(info);
         }
+
+        // Matches JS - client-side localStorage
+        (function(){
+            const KEY = 'overpilas_matches_v1';
+
+            function read() {
+                try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+                catch(e){ return []; }
+            }
+
+            function write(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+
+            function render(){
+                const list = read();
+                const container = document.getElementById('matches-list');
+                if(!container) return;
+                container.innerHTML = '';
+                if(list.length === 0){ container.innerHTML = '<p style="color:#6B7280;">No hay matches aún.</p>'; return; }
+                list.forEach((m, idx) =>{
+                    const div = document.createElement('div');
+                    div.className = 'match-card';
+                    function fmt(n){ const s = escapeHtml(String(n)); return s === '7421' ? `<strong>${s}</strong>` : s; }
+                    const rojos = (m.rojos || []).map(n=>fmt(n)).join(' • ');
+                    const azules = (m.azules || []).map(n=>fmt(n)).join(' • ');
+                    const matchNumLabel = m.matchNumber ? `<div style="font-weight:bold; margin-bottom:6px;">Match #${escapeHtml(String(m.matchNumber))}</div>` : '';
+                    div.innerHTML = `<div class="match-details">${matchNumLabel}<div><strong style="color:#DC2626">Red Alliance:</strong> ${rojos}</div><div><strong style="color:#2563EB">Blue Alliance:</strong> ${azules}</div><div style="font-size:12px;color:#6B7280; margin-top:6px;">${new Date(m.created).toLocaleString()}</div></div><div class="match-actions"><button data-idx="${idx}" class="del">Borrar</button></div>`;
+                    container.appendChild(div);
+                });
+                container.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', ()=>{
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    const arr = read(); arr.splice(idx,1); write(arr); render();
+                }));
+            }
+
+            function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+
+            document.addEventListener('DOMContentLoaded', ()=>{
+                const addBtn = document.getElementById('add-match');
+                const clearBtn = document.getElementById('clear-matches');
+                const addModal = document.getElementById('addmatch-modal');
+                const addOk = document.getElementById('addmatch-ok');
+                const addCancel = document.getElementById('addmatch-cancel');
+
+                render();
+
+                if(addBtn){ addBtn.addEventListener('click', ()=>{ addModal.style.display = 'flex'; }); }
+
+                if(addCancel){ addCancel.addEventListener('click', ()=>{ addModal.style.display = 'none'; }); }
+
+                if(addOk){ addOk.addEventListener('click', ()=>{
+                    // Leer valores
+                    const matchNumber = document.getElementById('match-number').value.trim();
+                    const r1 = document.getElementById('r1').value.trim();
+                    const r2 = document.getElementById('r2').value.trim();
+                    const r3 = document.getElementById('r3').value.trim();
+                    const b1 = document.getElementById('b1').value.trim();
+                    const b2 = document.getElementById('b2').value.trim();
+                    const b3 = document.getElementById('b3').value.trim();
+
+                    // Validar que todos sean números y estén presentes
+                    const vals = [r1,r2,r3,b1,b2,b3];
+                    if(matchNumber === ''){ alert('Ingresa el número de match.'); return; }
+                    if(vals.some(v=>v==='')){ alert('Por favor ingresa los 6 números.'); return; }
+                    if(vals.some(v=>isNaN(Number(v)))){ alert('Todos los valores deben ser números.'); return; }
+
+                    const match = {
+                        matchNumber: matchNumber,
+                        rojos: [Number(r1), Number(r2), Number(r3)],
+                        azules: [Number(b1), Number(b2), Number(b3)],
+                        created: new Date().toISOString()
+                    };
+                    const arr = read(); arr.unshift(match); write(arr);
+                    // limpiar inputs
+                    ['match-number','r1','r2','r3','b1','b2','b3'].forEach(id=>document.getElementById(id).value='');
+                    addModal.style.display = 'none';
+                    render();
+                }); }
+
+                if(clearBtn){ clearBtn.addEventListener('click', ()=>{ if(confirm('Limpiar TODOS los matches?')){ write([]); render(); } }); }
+            });
+        })();
+
+                // Next match banner: leer matches de localStorage y mostrar el siguiente (menor matchNumber)
+                (function(){
+                    function getNextMatch(){
+                        try{
+                            const arr = JSON.parse(localStorage.getItem('overpilas_matches_v1')||'[]');
+                            if(!arr || arr.length===0) return null;
+                            // Filtrar con matchNumber y orden ascendente por número (numérico)
+                            const filtered = arr.filter(m=>m.matchNumber!==undefined && m.matchNumber!=='');
+                            if(filtered.length===0) return null;
+                            filtered.sort((a,b)=> Number(a.matchNumber) - Number(b.matchNumber));
+                            return filtered[0];
+                        }catch(e){ return null; }
+                    }
+
+                    function renderNext(){
+                        const next = getNextMatch();
+                        const container = document.getElementById('next-match');
+                        if(!container) return;
+                        if(!next){ container.style.display='none'; try{ hideMatchEnviadaBox(); }catch(e){}; return; }
+
+                        // Determinar si 7421 está en red o blue
+                        const inRed = (next.rojos||[]).map(String).includes('7421');
+                        const inBlue = (next.azules||[]).map(String).includes('7421');
+                        // slightly lighter pastel (near-perfect)
+                        const color = inRed ? '#FFE6E6' : (inBlue ? '#E6F2FF' : '#F7F7F8');
+                        const textColor = inRed ? '#6B0F0F' : (inBlue ? '#09326C' : '#333333');
+
+                        // local escape to avoid dependency on outer scope
+                        function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+                        function fmt(n){ const s = String(n); return s === '7421' ? `<strong><u>${esc(s)}</u></strong>` : esc(s); }
+
+                        const rojos = (next.rojos||[]).map(fmt).join(' • ');
+                        const azules = (next.azules||[]).map(fmt).join(' • ');
+
+                        const html = `
+                            <div id="next-match-box" style="background:${color}; color:${textColor};">
+                                <div style="text-align:center; margin-bottom:8px; font-size:18px; font-weight:bold;">🟣 Siguiente match #${esc(String(next.matchNumber))} 🟣</div>
+                                <table>
+                                    <tr><th style="background:rgba(0,0,0,0.03)">Red Alliance</th><th style="background:rgba(0,0,0,0.03)">Blue Alliance</th></tr>
+                                    <tr><td style="color:${textColor};">${rojos}</td><td style="color:${textColor};">${azules}</td></tr>
+                                </table>
+                                <div class="pila-uso">Pila a utilizar: <strong>{{ mejor_pila if mejor_pila else 'N/A' }}</strong></div>
+                                <div style="margin-top:12px; text-align:center;">
+                                    <button id="match-enviada-btn" style="padding:8px 12px; border-radius:8px; background:#10B981; color:white; border:none; font-weight:bold; cursor:pointer;">Match enviada</button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML = html;
+                        container.style.display = 'block';
+                        // attach button handler inside the Next Match card
+                        try{
+                            const btn = document.getElementById('match-enviada-btn');
+                            if(btn){
+                                btn.removeEventListener('click', btnClickHandler);
+                                btn.addEventListener('click', btnClickHandler);
+                            }
+                        }catch(e){}
+                    }
+
+                    // Ejecutar al cargar y cada vez que cambie localStorage
+                    document.addEventListener('DOMContentLoaded', ()=>{ renderNext(); });
+                    window.addEventListener('storage', renderNext);
+
+                    // Borra la match mostrada (la que tiene el menor matchNumber) y vuelve a renderizar
+                    function marcarMatchEnviada(){
+                        try{
+                            const key = 'overpilas_matches_v1';
+                            const arr = JSON.parse(localStorage.getItem(key) || '[]');
+                            if(!arr || arr.length===0) return;
+                            // Encontrar la siguiente match (menor matchNumber)
+                            const filtered = arr.filter(m=>m.matchNumber!==undefined && m.matchNumber!=='');
+                            if(filtered.length===0) return;
+                            filtered.sort((a,b)=> Number(a.matchNumber) - Number(b.matchNumber));
+                            const next = filtered[0];
+                            // Buscar el índice original en el array almacenado (por matchNumber y rojos/azules/created comprobable)
+                            const idx = arr.findIndex(m => String(m.matchNumber) === String(next.matchNumber) && JSON.stringify(m.rojos) === JSON.stringify(next.rojos) && JSON.stringify(m.azules) === JSON.stringify(next.azules) && m.created === next.created);
+                            if(idx !== -1){
+                                arr.splice(idx,1);
+                                localStorage.setItem(key, JSON.stringify(arr));
+                                // Re-render both next match and matches list
+                                renderNext();
+                                // If matches render function exists in global scope, call it; otherwise dispatch storage event so other listeners update
+                                if(typeof window.renderMatches === 'function') window.renderMatches();
+                                else window.dispatchEvent(new Event('storage'));
+                            }
+                        }catch(e){ console.error('Error al marcar match enviada', e); }
+                    }
+
+                    function btnClickHandler(e){
+                        if(confirm('¿Confirmas que la match fue enviada?')){
+                            marcarMatchEnviada();
+                        }
+                    }
+                })();
+
+        // Login modal logic
+        (function(){
+            const USER = 'mentores';
+            const PASS = '7421';
+
+            function closeModal(){ document.getElementById('login-modal').style.display = 'none'; }
+
+            document.addEventListener('DOMContentLoaded', ()=>{
+                const ok = document.getElementById('login-ok');
+                const cancel = document.getElementById('login-cancel');
+                ok.addEventListener('click', ()=>{
+                    const user = document.getElementById('login-user').value;
+                    const pass = document.getElementById('login-pass').value;
+                    if(user === USER && pass === PASS){
+                        sessionStorage.setItem('overpilas_matches_auth','1');
+                        closeModal();
+                        // activar la pestaña matches programáticamente
+                        const tab = document.querySelector('.tab[data-target="panel-matches"]');
+                        if(tab) {
+                            tab.click();
+                            // Also update title explicitly
+                            const mainTitle = document.getElementById('main-title');
+                            if(mainTitle) mainTitle.textContent = '📝 Registro de Matches 📝';
+                        }
+                    } else {
+                        alert('Usuario o contraseña incorrectos');
+                    }
+                });
+                cancel.addEventListener('click', ()=>{ closeModal(); });
+            });
+        })();
     </script>
 
     <!-- Formulario oculto para reiniciar -->
     <form id="reiniciarForm" action="/reiniciar" method="post" style="display: none;">
     </form>
+    <!-- (Match enviada button is embedded in the Next Match card) -->
 </body>
 </html>

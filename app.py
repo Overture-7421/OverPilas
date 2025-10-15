@@ -142,7 +142,17 @@ def index():
     # Obtener pilas listas para conectar
     pilas_listas = obtener_pilas_listas_para_conectar()
 
-    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pila_en_uso=pila_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas)
+    # Determinar la mejor pila disponible (primera con carga válida, no en uso y no en cooldown)
+    mejor_pila = None
+    for p in listado_ordenado:
+        try:
+            if p.get('carga') != 'Sin datos' and p.get('nombre') != pila_en_uso and p.get('nombre') not in pilas_en_cooldown:
+                mejor_pila = p.get('nombre')
+                break
+        except Exception:
+            continue
+
+    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pila_en_uso=pila_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila)
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
