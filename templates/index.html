@@ -640,36 +640,25 @@
         });
 
         function confirmarReiniciar() {
-            if (confirm("⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos?\n\n\n\n ⚠️ No deberías hacerlo por nada en teoría ⚠️\n• ")) {
+            if (confirm("⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos?\n ⚠️ No deberías hacerlo por nada en teoría ⚠️\n• ")) {
                 // Si el usuario confirma, enviar formulario
                 document.getElementById('reiniciarForm').submit();
             }
         }
 
         function mostrarInformacion() {
-            const info = `📋 Instrucciones
-            
-1️⃣ Cada media hora, capturar en "Registrar Pila", el estado actual de cada pila que se encuentre conectada.
-2️⃣ Al momento de utilizar una pila, registrarla en "Pila en Uso". 
-3️⃣Cuando la pila es retirada del robot, registrarla en "Recibir Pila" para iniciar el cooldown de 30 minutos.
-4️⃣ La información se debe actualizar cada media hora
+            const info = `Instrucciones de uso:
 
-🎯 ORDEN DE CONEXIÓN:
-Las pilas listas se ordenan por tiempo sin conectar (más antiguos primero)
+- Cada 30 min: registrar estado en "Registrar Pila".
+- Marcar la pila en "Pila en Uso" cuando la uses.
+- Al retirarla, registrar en "Recibir Pila" (cooldown 30 min).
+- Las pilas listas se ordenan por tiempo sin conectar (más antiguas primero).
+- Marcar si se ganó o perdió la partida
+- "Reiniciar Todo" borra TODOS los datos.
 
-⚠️ RESET:
-El botón "Reiniciar Todo" borra TODOS los datos permanentemente
+Usar desde una sola computadora o sincronizar manualmente el archivo JSON.
 
-⚠️ IMPORTANTE:
-• No registrar pilas que no estén conectadas, en cooldown o en uso
-• Si se puede dar refresh, esto actualizará los temporizadores de cooldown
-
-
-🔴 Esta diseñado para que una sola computadora modifique los datos, si quieren cambiar de computadora, deben subir a github los cambios o bien, compartir el contenido del .json y reemplazarlo en la nueva computadora
-
-Dudas, comentarios o sugerencias me pueden decir (Rigo)
-
-`;
+Contacto: Rigo`;
 
             alert(info);
         }
@@ -686,7 +675,15 @@ Dudas, comentarios o sugerencias me pueden decir (Rigo)
             function write(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
 
             function render(){
-                const list = read();
+                // Render matches from first to last (ascending by matchNumber, fallback to created)
+                const raw = read() || [];
+                const list = raw.slice().sort((a,b)=>{
+                    const an = Number(a.matchNumber);
+                    const bn = Number(b.matchNumber);
+                    if(!isNaN(an) && !isNaN(bn)) return an - bn;
+                    if(a.created && b.created) return new Date(a.created) - new Date(b.created);
+                    return 0;
+                });
                 const container = document.getElementById('matches-list');
                 if(!container) return;
                 container.innerHTML = '';
@@ -698,10 +695,36 @@ Dudas, comentarios o sugerencias me pueden decir (Rigo)
                     const rojos = (m.rojos || []).map(n=>fmt(n)).join(' • ');
                     const azules = (m.azules || []).map(n=>fmt(n)).join(' • ');
                     const matchNumLabel = m.matchNumber ? `<div style="font-weight:bold; margin-bottom:6px;">Match #${escapeHtml(String(m.matchNumber))}</div>` : '';
-                    div.innerHTML = `<div class="match-details">${matchNumLabel}<div><strong style="color:#DC2626">Red Alliance:</strong> ${rojos}</div><div><strong style="color:#2563EB">Blue Alliance:</strong> ${azules}</div><div style="font-size:12px;color:#6B7280; margin-top:6px;">${new Date(m.created).toLocaleString()}</div></div><div class="match-actions"><button data-idx="${idx}" class="del">Borrar</button></div>`;
+                    // Result badge + timestamp (result_at)
+                    let resultBadge = '';
+                    if(m.result){
+                        if(m.result === 'win') {
+                            const ts = m.result_at ? escapeHtml(new Date(m.result_at).toLocaleString()) : '';
+                            resultBadge = `<div style="margin-top:8px;"><span style="background:#DCFCE7;color:#065F46;padding:4px 8px;border-radius:6px;font-weight:bold;">Ganamos</span>${ts ? `<div style="font-size:11px;color:#065F46;margin-top:6px;">${ts}</div>` : ''}</div>`;
+                        }
+                        else if(m.result === 'loss') {
+                            const ts = m.result_at ? escapeHtml(new Date(m.result_at).toLocaleString()) : '';
+                            resultBadge = `<div style="margin-top:8px;"><span style="background:#FFE4E6;color:#9B1C1C;padding:4px 8px;border-radius:6px;font-weight:bold;">Perdimos</span>${ts ? `<div style="font-size:11px;color:#9B1C1C;margin-top:6px;">${ts}</div>` : ''}</div>`;
+                        }
+                    }
+                    // Right-side badge HTML
+                    let rightBadge = '';
+                    if(m.result){
+                        if(m.result === 'win'){
+                            const ts = m.result_at ? escapeHtml(new Date(m.result_at).toLocaleString()) : '';
+                            rightBadge = `<div style="text-align:center;"><div style="background:#10B981;color:white;padding:8px 12px;border-radius:8px;font-weight:bold;font-size:14px;">WIN</div>${ts?`<div style=\"font-size:11px;color:#065F46;margin-top:6px;\">${ts}</div>`:''}</div>`;
+                        } else if(m.result === 'loss'){
+                            const ts = m.result_at ? escapeHtml(new Date(m.result_at).toLocaleString()) : '';
+                            rightBadge = `<div style="text-align:center;"><div style="background:#EF4444;color:white;padding:8px 12px;border-radius:8px;font-weight:bold;font-size:14px;">LOOSE</div>${ts?`<div style=\"font-size:11px;color:#9B1C1C;margin-top:6px;\">${ts}</div>`:''}</div>`;
+                        }
+                    }
+
+                    div.innerHTML = `<div style="flex:1; text-align:left;">${matchNumLabel}<div><strong style="color:#DC2626">Red Alliance:</strong> ${rojos}</div><div><strong style="color:#2563EB">Blue Alliance:</strong> ${azules}</div><div style="font-size:12px;color:#6B7280; margin-top:6px;">${new Date(m.created).toLocaleString()}</div></div><div style="margin-left:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">${rightBadge}<div style="margin-top:8px;"><button data-idx="${idx}" class="del">Borrar</button></div></div>`;
                     container.appendChild(div);
                 });
-                container.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', ()=>{
+                // expose render so other code can refresh the list
+                window.renderMatches = render;
+                container.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () =>{
                     const idx = parseInt(btn.getAttribute('data-idx'));
                     const arr = read(); arr.splice(idx,1); write(arr); render();
                 }));
@@ -770,83 +793,142 @@ Dudas, comentarios o sugerencias me pueden decir (Rigo)
                     }
 
                     function renderNext(){
-                        const next = getNextMatch();
-                        const container = document.getElementById('next-match');
-                        if(!container) return;
-                        if(!next){ container.style.display='none'; try{ hideMatchEnviadaBox(); }catch(e){}; return; }
+                            const container = document.getElementById('next-match');
+                            if(!container) return;
 
-                        // Determinar si 7421 está en red o blue
-                        const inRed = (next.rojos||[]).map(String).includes('7421');
-                        const inBlue = (next.azules||[]).map(String).includes('7421');
-                        // slightly lighter pastel (near-perfect)
-                        const color = inRed ? '#FFE6E6' : (inBlue ? '#E6F2FF' : '#F7F7F8');
-                        const textColor = inRed ? '#6B0F0F' : (inBlue ? '#09326C' : '#333333');
+                            // Load and sort matches
+                            const arr = JSON.parse(localStorage.getItem('overpilas_matches_v1')||'[]') || [];
+                            if(!arr || arr.length === 0){ container.style.display = 'none'; return; }
+                            const sorted = arr.slice().filter(m=>m.matchNumber!==undefined && m.matchNumber!=='').sort((a,b)=> Number(a.matchNumber)-Number(b.matchNumber));
 
-                        // local escape to avoid dependency on outer scope
-                        function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
-                        function fmt(n){ const s = String(n); return s === '7421' ? `<strong><u>${esc(s)}</u></strong>` : esc(s); }
-
-                        const rojos = (next.rojos||[]).map(fmt).join(' • ');
-                        const azules = (next.azules||[]).map(fmt).join(' • ');
-
-                        const html = `
-                            <div id="next-match-box" style="background:${color}; color:${textColor};">
-                                <div style="text-align:center; margin-bottom:8px; font-size:18px; font-weight:bold;">🟣 Siguiente match #${esc(String(next.matchNumber))} 🟣</div>
-                                <table>
-                                    <tr><th style="background:rgba(0,0,0,0.03)">Red Alliance</th><th style="background:rgba(0,0,0,0.03)">Blue Alliance</th></tr>
-                                    <tr><td style="color:${textColor};">${rojos}</td><td style="color:${textColor};">${azules}</td></tr>
-                                </table>
-                                <div class="pila-uso">Pila a utilizar: <strong>{{ mejor_pila if mejor_pila else 'N/A' }}</strong></div>
-                                <div style="margin-top:12px; text-align:center;">
-                                    <button id="match-enviada-btn" style="padding:8px 12px; border-radius:8px; background:#10B981; color:white; border:none; font-weight:bold; cursor:pointer;">Match enviada</button>
-                                </div>
-                            </div>
-                        `;
-                        container.innerHTML = html;
-                        container.style.display = 'block';
-                        // attach button handler inside the Next Match card
-                        try{
-                            const btn = document.getElementById('match-enviada-btn');
-                            if(btn){
-                                btn.removeEventListener('click', btnClickHandler);
-                                btn.addEventListener('click', btnClickHandler);
+                            // initialize current index if not present
+                            if(typeof window._op_matches_sorted === 'undefined') window._op_matches_sorted = sorted;
+                            else window._op_matches_sorted = sorted;
+                            if(typeof window._op_current_index === 'undefined'){
+                                // find first without result
+                                let i = sorted.findIndex(m=>!m.result);
+                                window._op_current_index = i === -1 ? 0 : i;
+                            } else {
+                                // clamp index
+                                if(window._op_current_index < 0) window._op_current_index = 0;
+                                if(window._op_current_index >= sorted.length) window._op_current_index = sorted.length-1;
                             }
-                        }catch(e){}
+
+                            const current = window._op_matches_sorted[window._op_current_index];
+                            if(!current){ container.style.display='none'; return; }
+
+                            // Helpers
+                            function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+                            function fmt(n){ const s = String(n); return s === '7421' ? `<strong><u>${esc(s)}</u></strong>` : esc(s); }
+
+                            const inRed = (current.rojos||[]).map(String).includes('7421');
+                            const inBlue = (current.azules||[]).map(String).includes('7421');
+                            const color = inRed ? '#FFE6E6' : (inBlue ? '#E6F2FF' : '#F7F7F8');
+                            const textColor = inRed ? '#6B0F0F' : (inBlue ? '#09326C' : '#333333');
+
+                            const rojos = (current.rojos||[]).map(fmt).join(' • ');
+                            const azules = (current.azules||[]).map(fmt).join(' • ');
+
+                            const html = `
+                                <div id="next-match-box" style="background:${color}; color:${textColor};">
+                                    <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:8px;">
+                                        <button id="nm-prev" style="background:linear-gradient(180deg,#7C3AED,#9F7AEA); color:#fff; border:none; padding:10px 14px; border-radius:10px; box-shadow:0 6px 16px rgba(124,58,237,0.18); cursor:pointer; font-weight:bold;">Prev</button>
+                                        <div style="text-align:center; font-size:18px; font-weight:bold;">Siguiente match #${esc(String(current.matchNumber))}</div>
+                                        <button id="nm-next" style="background:linear-gradient(180deg,#7C3AED,#9F7AEA); color:#fff; border:none; padding:10px 14px; border-radius:10px; box-shadow:0 6px 16px rgba(124,58,237,0.18); cursor:pointer; font-weight:bold;">Next</button>
+                                    </div>
+                                    <div style="text-align:center; font-size:12px; color:${textColor}; margin-bottom:8px;">${window._op_current_index+1} / ${window._op_matches_sorted.length}</div>
+                                    <table style="margin-top:8px;">
+                                        <tr><th style="background:rgba(0,0,0,0.03)">Red Alliance</th><th style="background:rgba(0,0,0,0.03)">Blue Alliance</th></tr>
+                                        <tr><td style="color:${textColor};">${rojos}</td><td style="color:${textColor};">${azules}</td></tr>
+                                    </table>
+                                    <div class="pila-uso">Pila a utilizar: <strong>{{ mejor_pila if mejor_pila else 'N/A' }}</strong></div>
+                                    <div style="margin-top:12px; text-align:center; display:flex; gap:8px; justify-content:center;">
+                                        <button id="match-ganamos-btn" style="padding:8px 12px; border-radius:8px; background:#10B981; color:white; border:none; font-weight:bold; cursor:pointer;">Win</button>
+                                        <button id="match-perdimos-btn" style="padding:8px 12px; border-radius:8px; background:#EF4444; color:white; border:none; font-weight:bold; cursor:pointer;">Loose</button>
+                                    </div>
+                                </div>
+                            `;
+
+                            container.innerHTML = html;
+                            container.style.display = 'block';
+
+                            // attach buttons
+                            try{
+                                const g = document.getElementById('match-ganamos-btn');
+                                const p = document.getElementById('match-perdimos-btn');
+                                const prev = document.getElementById('nm-prev');
+                                const nextBtn = document.getElementById('nm-next');
+                                if(g){ g.removeEventListener('click', onWin); g.addEventListener('click', onWin); }
+                                if(p){ p.removeEventListener('click', onLoose); p.addEventListener('click', onLoose); }
+                                if(prev){ prev.removeEventListener('click', onPrev); prev.addEventListener('click', onPrev); }
+                                if(nextBtn){ nextBtn.removeEventListener('click', onNext); nextBtn.addEventListener('click', onNext); }
+                            }catch(e){}
                     }
 
                     // Ejecutar al cargar y cada vez que cambie localStorage
                     document.addEventListener('DOMContentLoaded', ()=>{ renderNext(); });
                     window.addEventListener('storage', renderNext);
 
-                    // Borra la match mostrada (la que tiene el menor matchNumber) y vuelve a renderizar
-                    function marcarMatchEnviada(){
+                    // Marca el resultado ('win' o 'loss') en la match actual mostrada y avanza (o deja index en siguiente sin resultado)
+                    function marcarResultado(resultado){
                         try{
                             const key = 'overpilas_matches_v1';
                             const arr = JSON.parse(localStorage.getItem(key) || '[]');
                             if(!arr || arr.length===0) return;
-                            // Encontrar la siguiente match (menor matchNumber)
-                            const filtered = arr.filter(m=>m.matchNumber!==undefined && m.matchNumber!=='');
-                            if(filtered.length===0) return;
-                            filtered.sort((a,b)=> Number(a.matchNumber) - Number(b.matchNumber));
-                            const next = filtered[0];
-                            // Buscar el índice original en el array almacenado (por matchNumber y rojos/azules/created comprobable)
-                            const idx = arr.findIndex(m => String(m.matchNumber) === String(next.matchNumber) && JSON.stringify(m.rojos) === JSON.stringify(next.rojos) && JSON.stringify(m.azules) === JSON.stringify(next.azules) && m.created === next.created);
+                            // We operate on the currently shown match in window._op_matches_sorted[window._op_current_index]
+                            const sorted = (window._op_matches_sorted || []).slice();
+                            const curr = sorted[window._op_current_index];
+                            if(!curr) return;
+                            // Find index in original arr
+                            const idx = arr.findIndex(m => String(m.matchNumber) === String(curr.matchNumber) && JSON.stringify(m.rojos) === JSON.stringify(curr.rojos) && JSON.stringify(m.azules) === JSON.stringify(curr.azules) && m.created === curr.created);
                             if(idx !== -1){
-                                arr.splice(idx,1);
+                                arr[idx].result = resultado; // 'win' or 'loss'
+                                arr[idx].result_at = new Date().toISOString();
                                 localStorage.setItem(key, JSON.stringify(arr));
+                                // advance index to next match without result if available
+                                const filtered = arr.filter(m=>m.matchNumber!==undefined && m.matchNumber!=='').sort((a,b)=> Number(a.matchNumber)-Number(b.matchNumber));
+                                let nextIndex = filtered.findIndex(m=>!m.result);
+                                if(nextIndex === -1) nextIndex = Math.min(window._op_current_index+1, filtered.length-1);
+                                window._op_matches_sorted = filtered;
+                                window._op_current_index = nextIndex;
                                 // Re-render both next match and matches list
                                 renderNext();
-                                // If matches render function exists in global scope, call it; otherwise dispatch storage event so other listeners update
                                 if(typeof window.renderMatches === 'function') window.renderMatches();
                                 else window.dispatchEvent(new Event('storage'));
+                                // Also update server-side piles: mark previous pila_en_uso as received and set the suggested pile as en_uso
+                                try{
+                                    // read suggested pile from the rendered Next Match box
+                                    const pilaElem = document.querySelector('#next-match-box .pila-uso strong');
+                                    const suggested = pilaElem ? pilaElem.textContent.trim() : '';
+                                    // previous pila_en_uso from server-side render (initial value)
+                                    const prev = '{{ pila_en_uso if pila_en_uso else "" }}';
+                                    if(prev && prev !== '' && prev !== suggested){
+                                        // mark previous as received to start cooldown
+                                        fetch('/recibir_pila', {method:'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `nombre=${encodeURIComponent(prev)}`}).catch(()=>{});
+                                    }
+                                    if(suggested && suggested !== '' && suggested !== 'N/A'){
+                                        // mark suggested as in use
+                                        fetch('/pila_en_uso', {method:'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `nombre=${encodeURIComponent(suggested)}`}).catch(()=>{});
+                                    }
+                                }catch(e){ console.error('Error updating server piles', e); }
                             }
-                        }catch(e){ console.error('Error al marcar match enviada', e); }
+                        }catch(e){ console.error('Error al marcar resultado', e); }
                     }
 
-                    function btnClickHandler(e){
-                        if(confirm('¿Confirmas que la match fue enviada?')){
-                            marcarMatchEnviada();
-                        }
+                    // No confirmation: directly mark result and advance
+                    function onWin(e){ marcarResultado('win'); }
+                    function onLoose(e){ marcarResultado('loss'); }
+
+                    function onPrev(e){
+                        if(typeof window._op_current_index === 'undefined') return;
+                        window._op_current_index = Math.max(0, window._op_current_index - 1);
+                        renderNext();
+                    }
+
+                    function onNext(e){
+                        if(typeof window._op_current_index === 'undefined') return;
+                        window._op_current_index = Math.min((window._op_matches_sorted||[]).length - 1, window._op_current_index + 1);
+                        renderNext();
                     }
                 })();
 
