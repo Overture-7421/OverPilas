@@ -280,6 +280,16 @@
             border-radius: 10px;
             color: #374151;
         }
+        .pila-list-item { margin: 10px 0; padding: 8px; background-color: #E6E0F8; border-radius: 5px; border-left: 4px solid #9370DB; display:flex; justify-content:space-between; align-items:center; }
+        .pila-list-item.disabled { background-color: #F3F3F4; color: #9CA3AF; }
+        .pila-toggle-btn { color:white; border:none; padding:6px 8px; border-radius:6px; cursor:pointer; }
+    /* Pastel orange for the "Inhabilitar Pila" button */
+    .pila-toggle-btn.disable { background:#FDBA74; }
+        .pila-toggle-btn.enable { background:#9CA3AF; }
+    .prestado-card { background:#FBFBFD; border:1px solid #E6E9FF; padding:10px; border-radius:8px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; }
+    .returned-badge { background:#D1FAE5; color:#065F46; padding:6px 10px; border-radius:8px; font-weight:bold; }
+    .prestado-item-text { flex:1; font-size:18px; text-align:center; font-weight:600; color:#374151; }
+    .prestado-equipo { color: #6B46C1; font-weight:700; }
         /* Next match banner (pastel colors) */
         #next-match-box {
             border-radius: 10px;
@@ -365,6 +375,7 @@
     <div class="tabs" role="tablist">
         <div class="tab active" data-target="panel-pilas" role="tab" aria-selected="true">Pilas</div>
         <div class="tab" data-target="panel-matches" role="tab" aria-selected="false">Matches</div>
+        <div class="tab" data-target="panel-prestados" role="tab" aria-selected="false">Cosas Prestadas</div>
     </div>
 
     <div class="tab-panel" id="panel-pilas" role="tabpanel">
@@ -493,9 +504,9 @@
                     {% for pila in pilas %}
                     <tr>
                         <td>{{ pila.nombre }}</td>
-                        {% if pila.nombre == pila_en_uso %}
-                            <td class="en-uso">En uso</td>
-                            <td class="en-uso">En uso</td>
+                {% if pila.nombre in pilas_en_uso %}
+                    <td class="en-uso">En uso</td>
+                    <td class="en-uso">En uso</td>
                         {% elif pila.nombre in pilas_en_cooldown %}
                             {% set cooldown_time = pilas_en_cooldown[pila.nombre] %}
                             {% set is_ready = False %}
@@ -529,7 +540,14 @@
                     <p style="color: #4B0082; font-weight: bold; margin-bottom: 15px;">Orden por tiempo sin conectar (más antiguos primero):</p>
                     <ol style="color: #4B0082; text-align: left; font-weight: bold; font-size: 16px; line-height: 1.8;">
                         {% for pila_lista in pilas_listas %}
-                            <li style="margin: 10px 0; padding: 8px; background-color: #E6E0F8; border-radius: 5px; border-left: 4px solid #9370DB;">{{ pila_lista.nombre }}</li>
+                            {% set disabled = pila_lista.disabled if pila_lista.disabled is defined else False %}
+                            <li class="pila-list-item {{ 'disabled' if disabled else '' }}">
+                                <span style="flex:1;">{{ pila_lista.nombre }}</span>
+                                <form action="/toggle_inhabilitar" method="post" style="margin:0;">
+                                    <input type="hidden" name="nombre" value="{{ pila_lista.nombre }}" />
+                                    <button type="submit" class="pila-toggle-btn {{ 'enable' if disabled else 'disable' }}">{{ 'Habilitar' if disabled else 'Inhabilitar Pila' }}</button>
+                                </form>
+                            </li>
                         {% endfor %}
                     </ol>
                 {% else %}
@@ -552,6 +570,27 @@
 
             <div style="margin-top:12px; text-align:center;">
                 <button id="clear-matches">Limpiar todos los matches</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-prestados" role="tabpanel" style="display:none;">
+        <div class="matches-content">
+            <h2>Cosas Prestadas</h2>
+            <div style="display:flex; justify-content:center; gap:12px; margin-bottom:16px;">
+                <button id="add-prestado">Agregar</button>
+            </div>
+
+            <div id="prestados-list">
+                <p style="color:#6B7280; text-align:center;">No hay items prestados.</p>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px;">
+                <h3 style="margin:0;">Cosas Devueltas</h3>
+                <button id="clear-devueltos" style="background:linear-gradient(135deg,#FDBA74,#F59E0B); color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer;">Limpiar Devueltos</button>
+            </div>
+            <div id="devueltos-list">
+                <p style="color:#6B7280; text-align:center;">No hay items devueltos.</p>
             </div>
         </div>
     </div>
@@ -589,6 +628,24 @@
             <div class="modal-actions">
                 <button id="addmatch-cancel">Cancelar</button>
                 <button id="addmatch-ok">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar prestado -->
+    <div id="addprestado-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Agregar Item Prestado</h3>
+            <p>
+                <label style="font-weight:bold;">Número de equipo: <input id="prestado-equipo" class="modal-input" placeholder="Ej: 7421" style="width:120px; display:inline-block; margin-left:8px;" /></label>
+            </p>
+            <p>
+                <label style="font-weight:bold;">Qué se prestó:</label>
+                <input id="prestado-item" class="modal-input" placeholder="Ej: Control remoto" />
+            </p>
+            <div class="modal-actions">
+                <button id="addprestado-cancel">Cancelar</button>
+                <button id="addprestado-ok">Guardar</button>
             </div>
         </div>
     </div>
@@ -778,6 +835,82 @@ Contacto: Rigo`;
             });
         })();
 
+        // Cosas Prestadas - client-side localStorage (key: overpilas_prestados_v1)
+        (function(){
+            const KEY_PRE = 'overpilas_prestados_v1';
+            const KEY_DEV = 'overpilas_devueltos_v1';
+            function read(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
+            function write(key, arr){ localStorage.setItem(key, JSON.stringify(arr)); }
+            function render(){
+                const list = read(KEY_PRE);
+                const container = document.getElementById('prestados-list');
+                const devContainer = document.getElementById('devueltos-list');
+                if(!container || !devContainer) return;
+                container.innerHTML = '';
+                devContainer.innerHTML = '';
+                if(!list || list.length===0){ container.innerHTML = '<p style="color:#6B7280; text-align:center;">No hay items prestados.</p>'; }
+                else{
+                    list.forEach((it, idx)=>{
+                        const div = document.createElement('div');
+                        div.className = 'prestado-card';
+                        const left = document.createElement('div');
+                        left.innerHTML = `<div style="display:flex; gap:10px; align-items:center; width:100%;"><div class=\"prestado-equipo\">Equipo ${escapeHtml(it.equipo)}</div><div class=\"prestado-item-text\">${escapeHtml(it.item)}</div></div><div style=\"font-size:11px;color:#6B7280;margin-top:6px;\">${new Date(it.created).toLocaleString()}</div>`;
+                        const right = document.createElement('div');
+                        right.innerHTML = `<div><button data-idx="${idx}" class="mark-return">Devuelto</button></div>`;
+                        div.appendChild(left); div.appendChild(right); container.appendChild(div);
+                    });
+                }
+
+                const devs = read(KEY_DEV);
+                if(!devs || devs.length===0){ devContainer.innerHTML = '<p style="color:#6B7280; text-align:center;">No hay items devueltos.</p>'; }
+                else{
+                    devs.forEach((it, idx)=>{
+                        const div = document.createElement('div');
+                        div.className = 'prestado-card';
+                        div.innerHTML = `<div style="flex:1;"><div style=\"display:flex; gap:10px; align-items:center; width:100%;\"><div class=\"prestado-equipo\">Equipo ${escapeHtml(it.equipo)}</div><div class=\"prestado-item-text\">${escapeHtml(it.item)}</div></div><div style=\"font-size:11px;color:#6B7280;margin-top:6px;\">${new Date(it.created).toLocaleString()}</div></div><div><div class=\"returned-badge\">Devuelto</div></div>`;
+                        devContainer.appendChild(div);
+                    });
+                }
+
+                document.querySelectorAll('.mark-return').forEach(btn=>btn.addEventListener('click', ()=>{
+                    const i = Number(btn.getAttribute('data-idx'));
+                    const arr = read(KEY_PRE);
+                    if(!arr[i]) return;
+                    const item = arr.splice(i,1)[0];
+                    write(KEY_PRE, arr);
+                    const devs2 = read(KEY_DEV);
+                    devs2.unshift(item);
+                    write(KEY_DEV, devs2);
+                    render();
+                }));
+            }
+            function escapeHtml(s){ return String(s||'').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":"&#39;"})[c]); }
+
+            document.addEventListener('DOMContentLoaded', ()=>{
+                const addBtn = document.getElementById('add-prestado');
+                const modal = document.getElementById('addprestado-modal');
+                const ok = document.getElementById('addprestado-ok');
+                const cancel = document.getElementById('addprestado-cancel');
+                render();
+                if(addBtn) addBtn.addEventListener('click', ()=>{ modal.style.display='flex'; });
+                if(cancel) cancel.addEventListener('click', ()=>{ modal.style.display='none'; });
+                if(ok) ok.addEventListener('click', ()=>{
+                    const equipo = document.getElementById('prestado-equipo').value.trim();
+                    const item = document.getElementById('prestado-item').value.trim();
+                    if(!equipo || !item){ alert('Completa ambos campos'); return; }
+                    const arr = read(KEY_PRE); arr.unshift({ equipo: equipo, item: item, created: new Date().toISOString() }); write(KEY_PRE, arr);
+                    document.getElementById('prestado-equipo').value=''; document.getElementById('prestado-item').value=''; modal.style.display='none'; render();
+                });
+                // Clear devueltos button
+                const clearDevBtn = document.getElementById('clear-devueltos');
+                if(clearDevBtn) clearDevBtn.addEventListener('click', ()=>{
+                    if(!confirm('¿Limpiar TODOS los items devueltos?')) return;
+                    write(KEY_DEV, []);
+                    render();
+                });
+            });
+        })();
+
                 // Next match banner: leer matches de localStorage y mostrar el siguiente (menor matchNumber)
                 (function(){
                     function getNextMatch(){
@@ -900,12 +1033,18 @@ Contacto: Rigo`;
                                     // read suggested pile from the rendered Next Match box
                                     const pilaElem = document.querySelector('#next-match-box .pila-uso strong');
                                     const suggested = pilaElem ? pilaElem.textContent.trim() : '';
-                                    // previous pila_en_uso from server-side render (initial value)
-                                    const prev = '{{ pila_en_uso if pila_en_uso else "" }}';
-                                    if(prev && prev !== '' && prev !== suggested){
-                                        // mark previous as received to start cooldown
-                                        fetch('/recibir_pila', {method:'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `nombre=${encodeURIComponent(prev)}`}).catch(()=>{});
-                                    }
+                                    // previous pilas en uso from server-side render (initial value)
+                                    const prevJson = '{{ pilas_en_uso | tojson }}';
+                                    let prevList = [];
+                                    try{ prevList = prevJson ? JSON.parse(prevJson) : []; }catch(e){ prevList = []; }
+                                    // Mark any previous pilas that are different from the suggested one as received
+                                    prevList.forEach(prev => {
+                                        try{
+                                            if(prev && prev !== '' && prev !== suggested){
+                                                fetch('/recibir_pila', {method:'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `nombre=${encodeURIComponent(prev)}`}).catch(()=>{});
+                                            }
+                                        }catch(e){}
+                                    });
                                     if(suggested && suggested !== '' && suggested !== 'N/A'){
                                         // mark suggested as in use
                                         fetch('/pila_en_uso', {method:'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `nombre=${encodeURIComponent(suggested)}`}).catch(()=>{});
