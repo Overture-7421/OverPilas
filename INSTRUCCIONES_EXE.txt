@@ -1,0 +1,125 @@
+================================================================================
+                    OverPilas - Sistema de Gestión de Baterías
+                         Instrucciones de Uso del Ejecutable
+================================================================================
+
+CONTENIDO DEL PAQUETE
+---------------------
+El ejecutable OverPilas.exe contiene todo lo necesario para ejecutar la
+aplicación sin necesidad de instalar Python.
+
+
+CÓMO USAR
+---------
+1. Copia el archivo OverPilas.exe a cualquier carpeta en tu computadora
+
+2. Haz doble clic en OverPilas.exe para iniciar la aplicación
+
+3. Una ventana de consola (negra) se abrirá mostrando el estado del servidor
+
+4. Tu navegador web se abrirá automáticamente en http://127.0.0.1:5000
+
+5. Selecciona el modo de competencia (FTC o FRC) en la primera pantalla
+
+
+ARCHIVOS DE DATOS
+-----------------
+La aplicación creará automáticamente los siguientes archivos en la misma
+carpeta donde se encuentra OverPilas.exe:
+
+  • battery_names.json  - Nombres de las baterías por modo
+  • config.json         - Configuración del modo de competencia seleccionado
+  • pilas.json          - Datos de las baterías (carga, estado, cooldown, etc.)
+
+IMPORTANTE: NO borres estos archivos mientras uses la aplicación, ya que
+contienen toda la información de tus baterías.
+
+
+CARACTERÍSTICAS SEGÚN EL MODO
+------------------------------
+
+MODO FTC (FIRST Tech Challenge):
+  • Cooldown de 15 minutos
+  • Solo requiere nombre de batería (sin mediciones)
+  • Baterías: La Niña, Martín, Jose Luis, Timmy, ftc1-ftc9
+
+MODO FRC (FIRST Robotics Competition):
+  • Cooldown de 30 minutos
+  • Requiere Carga (0-130) y Ohms
+  • Baterías: Tlacua, Jasper, Caditos, Timmy, Thunderbird, etc.
+
+
+ACCESO A MATCHES
+----------------
+Usuario: mentores
+Contraseña: 7421
+
+
+BOTONES PRINCIPALES
+-------------------
+  • 🔄 Cambiar Modo    - Volver a la selección de modo FTC/FRC
+  • ℹ️ Información     - Ver instrucciones de uso
+  • 🔄 Reiniciar Todo  - Borrar TODOS los datos (usar con precaución)
+
+
+CARACTERES ESPECIALES
+----------------------
+La aplicación soporta completamente caracteres especiales del español:
+  • Acentos: á, é, í, ó, ú
+  • Eñe: ñ
+  • Otros caracteres latinos
+
+
+CÓMO DETENER LA APLICACIÓN
+---------------------------
+1. Cierra la ventana del navegador
+2. En la ventana negra (consola), presiona Ctrl+C
+3. O simplemente cierra la ventana de consola
+
+
+NOTAS IMPORTANTES
+-----------------
+  • El ejecutable NO requiere conexión a internet
+  • Solo una persona puede usar la aplicación a la vez por computadora
+  • Si quieres usar la app en múltiples computadoras al mismo tiempo,
+    copia el EXE a cada una (cada computadora tendrá sus propios datos)
+  • Los archivos JSON se pueden copiar entre computadoras para sincronizar
+    los datos manualmente
+
+
+SOLUCIÓN DE PROBLEMAS
+----------------------
+
+Problema: El navegador no se abre automáticamente
+Solución: Abre tu navegador manualmente y ve a: http://127.0.0.1:5000
+
+Problema: Error "Puerto en uso"
+Solución: Cierra cualquier otra instancia de OverPilas o aplicaciones
+          usando el puerto 5000, luego vuelve a intentar
+
+Problema: Se perdieron los datos
+Solución: Si tienes una copia de seguridad de los archivos JSON, cópialos
+          a la misma carpeta del EXE
+
+
+UBICACIÓN DEL EJECUTABLE
+-------------------------
+El archivo OverPilas.exe se encuentra en:
+D:\1.SQM\2.OVERTURE\OverPilas\dist\OverPilas.exe
+
+
+RECOMENDACIONES
+---------------
+  • Haz copias de seguridad de los archivos JSON regularmente
+  • No ejecutes múltiples instancias del programa al mismo tiempo
+  • Usa Chrome, Firefox o Edge para mejor compatibilidad
+
+
+CONTACTO
+--------
+Para soporte técnico, contacta a: Rigo
+
+
+================================================================================
+                         ¡Buena suerte en la competencia!
+================================================================================
