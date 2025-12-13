@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Registro de Pilas</title>
     <style>
         body { 
@@ -190,10 +191,31 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
             font-size: 14px;
         }
-        
+
         .info-btn:hover {
             background: linear-gradient(135deg, #1D4ED8, #2563EB);
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Botón de cambiar modo */
+        .change-mode-btn {
+            position: fixed;
+            bottom: 70px;
+            left: 15px;
+            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            color: white;
+            border: none;
+            padding: 12px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            font-size: 14px;
+        }
+
+        .change-mode-btn:hover {
+            background: linear-gradient(135deg, #7C3AED, #8B5CF6);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
         }
 
         /* Última actualización */
@@ -369,7 +391,7 @@
     <!-- Imagen superior derecha -->
     <img src="/static/logo.png" alt="Logo" class="imagen-superior" onerror="this.style.display='none'">
 
-    <h1 id="main-title">🔋 Registro de Pilas 🔋</h1>
+    <h1 id="main-title">🔋 Registro de Pilas ({{ competition_mode }}) 🔋</h1>
 
     <!-- Pestañas -->
     <div class="tabs" role="tablist">
@@ -392,29 +414,13 @@
                     <label>Nombre:</label>
                     <select name="nombre" required>
                         <option value="">--Selecciona--</option>
-                        <option value="Tlacua">Tlacua</option>
-                        <option value="Jasper">Jasper</option>
-                        <option value="Caditos">Caditos</option>
-                        <option value="Timmy">Timmy</option>
-                        <option value="Thunderbird">Thunderbird</option>
-                        <option value="Miguelito">Miguelito</option>
-                        <option value="Cesarín">Cesarín</option>
-                        <option value="El tío">El tío</option>
-                        <option value="Chopper">Chopper</option>
-                        <option value="Gaia">Gaia</option>
-                        <option value="Gipsy">Gipsy</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
+                        {% for nombre in nombres_fijos %}
+                        <option value="{{ nombre }}">{{ nombre }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
+                {% if competition_mode == 'FRC' %}
                 <div class="campo-linea">
                     <label>Carga (0-130):</label>
                     <input name="carga" type="number" min="0" max="130" required>
@@ -424,6 +430,7 @@
                     <label>Ohms:</label>
                     <input name="ohms" type="number" step="0.001" required>
                 </div>
+                {% endif %}
 
                 <button type="submit">Agregar pila</button>
             </form>
@@ -435,26 +442,9 @@
                 Seleccionar pila en uso:
                 <select name="nombre" required>
                     <option value="">--Selecciona pila--</option>
-                    <option value="Tlacua">Tlacua</option>
-                    <option value="Jasper">Jasper</option>
-                    <option value="Caditos">Caditos</option>
-                    <option value="Timmy">Timmy</option>
-                    <option value="Thunderbird">Thunderbird</option>
-                    <option value="Miguelito">Miguelito</option>
-                    <option value="Cesarín">Cesarín</option>
-                    <option value="El tío">El tío</option>
-                    <option value="Chopper">Chopper</option>
-                    <option value="Gaia">Gaia</option>
-                    <option value="Gipsy">Gipsy</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
+                    {% for nombre in nombres_fijos %}
+                    <option value="{{ nombre }}">{{ nombre }}</option>
+                    {% endfor %}
                 </select><br><br>
                 <button type="submit">Marcar como en uso</button>
             </form>
@@ -466,26 +456,9 @@
                 Seleccionar pila recibida:
                 <select name="nombre" required>
                     <option value="">--Selecciona pila--</option>
-                    <option value="Tlacua">Tlacua</option>
-                    <option value="Jasper">Jasper</option>
-                    <option value="Caditos">Caditos</option>
-                    <option value="Timmy">Timmy</option>
-                    <option value="Thunderbird">Thunderbird</option>
-                    <option value="Miguelito">Miguelito</option>
-                    <option value="Cesarín">Cesarín</option>
-                    <option value="El tío">El tío</option>
-                    <option value="Chopper">Chopper</option>
-                    <option value="Gaia">Gaia</option>
-                    <option value="Gipsy">Gipsy</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
+                    {% for nombre in nombres_fijos %}
+                    <option value="{{ nombre }}">{{ nombre }}</option>
+                    {% endfor %}
                 </select><br><br>
                 <button type="submit">Marcar como recibida</button>
             </form>
@@ -498,15 +471,23 @@
                 <table>
                     <tr>
                         <th>Nombre</th>
+                        {% if competition_mode == 'FRC' %}
                         <th>Carga</th>
                         <th>Ohms</th>
+                        {% else %}
+                        <th>Estado</th>
+                        {% endif %}
                     </tr>
                     {% for pila in pilas %}
                     <tr>
                         <td>{{ pila.nombre }}</td>
                 {% if pila.nombre in pilas_en_uso %}
+                    {% if competition_mode == 'FRC' %}
                     <td class="en-uso">En uso</td>
                     <td class="en-uso">En uso</td>
+                    {% else %}
+                    <td class="en-uso">En uso</td>
+                    {% endif %}
                         {% elif pila.nombre in pilas_en_cooldown %}
                             {% set cooldown_time = pilas_en_cooldown[pila.nombre] %}
                             {% set is_ready = False %}
@@ -516,18 +497,34 @@
                                 {% endif %}
                             {% endfor %}
                             {% if is_ready %}
+                                {% if competition_mode == 'FRC' %}
                                 <td class="lista-conectar">Lista para conectar</td>
                                 <td class="lista-conectar">Lista para conectar</td>
+                                {% else %}
+                                <td class="lista-conectar">Lista para conectar</td>
+                                {% endif %}
                             {% else %}
+                                {% if competition_mode == 'FRC' %}
                                 <td class="en-cooldown">En cooldown</td>
                                 <td class="en-cooldown">En cooldown</td>
+                                {% else %}
+                                <td class="en-cooldown">En cooldown</td>
+                                {% endif %}
                             {% endif %}
-                        {% elif pila.carga == "Sin datos" %}
+                        {% elif pila.carga == "Sin datos" or pila.carga == "N/A" %}
+                            {% if competition_mode == 'FRC' %}
                             <td class="lista-conectar">Lista para conectar</td>
                             <td class="lista-conectar">Lista para conectar</td>
+                            {% else %}
+                            <td class="lista-conectar">Lista para conectar</td>
+                            {% endif %}
                         {% else %}
+                            {% if competition_mode == 'FRC' %}
                             <td>{{ pila.carga }}</td>
                             <td>{{ pila.ohms }}</td>
+                            {% else %}
+                            <td>Registrada</td>
+                            {% endif %}
                         {% endif %}
                     </tr>
                     {% endfor %}
@@ -656,6 +653,9 @@
     <!-- Botón de información -->
     <button class="info-btn" onclick="mostrarInformacion()">ℹ️ Información</button>
 
+    <!-- Botón de cambiar modo -->
+    <button class="change-mode-btn" onclick="window.location.href='/select_mode'">🔄 Cambiar Modo</button>
+
     <script>
         // Tabs logic
         document.addEventListener('DOMContentLoaded', function() {
@@ -688,9 +688,10 @@
 
                     // Cambiar título principal según pestaña
                     const mainTitle = document.getElementById('main-title');
+                    const compMode = '{{ competition_mode }}';
                     if(mainTitle){
                         if(target === 'panel-matches') mainTitle.textContent = '📝 Registro de Matches 📝';
-                        else mainTitle.textContent = '🔋 Registro de Pilas 🔋';
+                        else mainTitle.textContent = '🔋 Registro de Pilas (' + compMode + ') 🔋';
                     }
                 });
             });
@@ -704,11 +705,20 @@
         }
 
         function mostrarInformacion() {
-            const info = `Instrucciones de uso:
+            const compMode = '{{ competition_mode }}';
+            const cooldownMins = {{ cooldown_minutes }};
+            let registroInfo = '';
+            if (compMode === 'FRC') {
+                registroInfo = '- Cada ' + cooldownMins + ' min: registrar estado (Carga y Ohms) en "Registrar Pila".';
+            } else {
+                registroInfo = '- Registrar pila por nombre solamente en "Registrar Pila".';
+            }
 
-- Cada 30 min: registrar estado en "Registrar Pila".
+            const info = `Instrucciones de uso (Modo ${compMode}):
+
+${registroInfo}
 - Marcar la pila en "Pila en Uso" cuando la uses.
-- Al retirarla, registrar en "Recibir Pila" (cooldown 30 min).
+- Al retirarla, registrar en "Recibir Pila" (cooldown ${cooldownMins} min).
 - Las pilas listas se ordenan por tiempo sin conectar (más antiguas primero).
 - Marcar si se ganó o perdió la partida
 - "Reiniciar Todo" borra TODOS los datos.

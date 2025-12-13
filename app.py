@@ -1,14 +1,73 @@
-from flask import Flask, request, render_template, redirect
+from flask import Flask, request, render_template, redirect, jsonify
 import json, os
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 data_file = 'pilas.json'
+config_file = 'config.json'
+battery_names_file = 'battery_names.json'
 
-# Lista fija de nombres
-nombres_fijos = ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
-                "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
-                "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+# Cargar configuración
+def load_config():
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {'competition_mode': None}
+    return {'competition_mode': None}
+
+def save_config(config):
+    with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+# Cargar nombres de baterías desde JSON
+def load_battery_names():
+    if os.path.exists(battery_names_file):
+        try:
+            with open(battery_names_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            # Si hay error, usar valores por defecto
+            return {
+                "FRC": ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird",
+                       "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
+                       "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                "FTC": ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird",
+                       "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
+                       "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+            }
+    return {
+        "FRC": ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird",
+               "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
+               "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        "FTC": ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird",
+               "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
+               "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    }
+
+# Cargar configuración y nombres
+config = load_config()
+battery_names_data = load_battery_names()
+
+# Obtener nombres según el modo de competencia
+def get_nombres_fijos():
+    mode = config.get('competition_mode')
+    if mode == 'FTC':
+        return battery_names_data.get('FTC', [])
+    elif mode == 'FRC':
+        return battery_names_data.get('FRC', [])
+    else:
+        # Por defecto, usar FRC si no hay modo configurado
+        return battery_names_data.get('FRC', [])
+
+# Obtener tiempo de cooldown según el modo (en segundos)
+def get_cooldown_time():
+    mode = config.get('competition_mode')
+    if mode == 'FTC':
+        return 900  # 15 minutos
+    else:  # FRC o default
+        return 1800  # 30 minutos
 
 def es_pila_lista_para_conectar(nombre):
     """Verifica si una pila está lista para conectar"""
@@ -16,13 +75,14 @@ def es_pila_lista_para_conectar(nombre):
     pila = next((p for p in pilas if p['nombre'] == nombre), None)
     if not pila:
         return True
-    
-    # Si está en cooldown, verificar si han pasado 30 minutos
+
+    # Si está en cooldown, verificar si han pasado el tiempo según el modo
     if nombre in pilas_en_cooldown:
         timestamp_cooldown = datetime.strptime(pilas_en_cooldown[nombre], "%Y-%m-%d %H:%M")
         tiempo_transcurrido = datetime.now() - timestamp_cooldown
-        return tiempo_transcurrido.total_seconds() >= 1800  # 30 minutos = 1800 segundos
-    
+        cooldown_seconds = get_cooldown_time()
+        return tiempo_transcurrido.total_seconds() >= cooldown_seconds
+
     return False
 
 def obtener_pilas_listas_para_conectar():
@@ -30,7 +90,9 @@ def obtener_pilas_listas_para_conectar():
     global pilas_en_cooldown, pilas_inhabilitadas
     pilas_listas = []
     cooldowns_a_limpiar = []
-    
+    nombres_fijos = get_nombres_fijos()
+    cooldown_seconds = get_cooldown_time()
+
     for nombre in nombres_fijos:
         if nombre in pilas_en_uso:
             continue  # Saltar pilas que estén en uso
@@ -43,9 +105,9 @@ def obtener_pilas_listas_para_conectar():
             if nombre in pilas_en_cooldown:
                 timestamp_cooldown = datetime.strptime(pilas_en_cooldown[nombre], "%Y-%m-%d %H:%M")
                 tiempo_transcurrido = datetime.now() - timestamp_cooldown
-                
-                # Si ya pasaron 30 minutos, marcar para limpiar del cooldown
-                if tiempo_transcurrido.total_seconds() >= 1800:
+
+                # Si ya pasó el tiempo de cooldown, marcar para limpiar
+                if tiempo_transcurrido.total_seconds() >= cooldown_seconds:
                     cooldowns_a_limpiar.append(nombre)
                     tiempo_sin_conectar = timestamp_cooldown
                 else:
@@ -71,8 +133,8 @@ def obtener_pilas_listas_para_conectar():
             'pilas_en_uso': pilas_en_uso,
             'pilas_en_cooldown': pilas_en_cooldown
         }
-        with open(data_file, 'w') as f:
-            json.dump(data_to_save, f)
+        with open(data_file, 'w', encoding='utf-8') as f:
+            json.dump(data_to_save, f, ensure_ascii=False)
     
     # Ordenar: primero por disabled (False primero), luego por tiempo sin conectar (más antiguos primero)
     pilas_listas.sort(key=lambda x: (x.get('disabled', False), x['tiempo_sin_conectar']))
@@ -91,7 +153,7 @@ pilas_inhabilitadas = set()
 # Nota: mantenemos compatibilidad con el formato antiguo que usaba 'pila_en_uso'
 if os.path.exists(data_file):
     try:
-        with open(data_file, 'r') as f:
+        with open(data_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):
                 # Formato anterior - solo lista de pilas
@@ -112,8 +174,22 @@ if os.path.exists(data_file):
 
 @app.route('/')
 def index():
+    # Siempre redirigir a la selección de modo
+    return redirect('/select_mode')
+
+@app.route('/select_mode')
+def select_mode():
+    return render_template('select_mode.html')
+
+@app.route('/main')
+def main():
+    # Verificar que haya un modo seleccionado
+    if config.get('competition_mode') is None:
+        return redirect('/select_mode')
+
     # Crear lista completa para mostrar
     listado = []
+    nombres_fijos = get_nombres_fijos()
     for nombre in nombres_fijos:
         pila = next((p for p in pilas if p['nombre'] == nombre), None)
         if pila:
@@ -144,9 +220,10 @@ def index():
     proximo_chequeo = None
     if ultima_actualizacion:
         try:
-            # Convertir la fecha de string a datetime y sumar 30 minutos
+            # Convertir la fecha de string a datetime y sumar el tiempo de cooldown
             fecha_actualizacion = datetime.strptime(ultima_actualizacion, "%Y-%m-%d %H:%M")
-            proximo = fecha_actualizacion + timedelta(minutes=30)
+            cooldown_minutes = get_cooldown_time() // 60
+            proximo = fecha_actualizacion + timedelta(minutes=cooldown_minutes)
             proximo_chequeo = proximo.strftime("%H:%M")
         except:
             proximo_chequeo = None
@@ -164,25 +241,43 @@ def index():
         except Exception:
             continue
 
-    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas))
+    return render_template('index.html',
+                         pilas=listado_ordenado,
+                         ultima_actualizacion=ultima_actualizacion,
+                         proximo_chequeo=proximo_chequeo,
+                         pilas_en_uso=pilas_en_uso,
+                         pilas_en_cooldown=pilas_en_cooldown,
+                         pilas_listas=pilas_listas,
+                         mejor_pila=mejor_pila,
+                         pilas_inhabilitadas=list(pilas_inhabilitadas),
+                         competition_mode=config.get('competition_mode'),
+                         nombres_fijos=get_nombres_fijos(),
+                         cooldown_minutes=get_cooldown_time()//60)
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
     global ultima_actualizacion
 
     nombre = request.form['nombre']
-    carga = request.form['carga']
-    ohms = request.form['ohms']
+    mode = config.get('competition_mode')
+
+    # Para FTC, solo necesitamos el nombre (sin carga ni ohms)
+    if mode == 'FTC':
+        pila_data = {"nombre": nombre, "carga": "N/A", "ohms": "N/A"}
+    else:  # FRC o default
+        carga = request.form['carga']
+        ohms = request.form['ohms']
+        pila_data = {"nombre": nombre, "carga": carga, "ohms": ohms}
 
     # Reemplazar si ya existe
     encontrado = False
     for i, pila in enumerate(pilas):
         if pila['nombre'] == nombre:
-            pilas[i] = {"nombre": nombre, "carga": carga, "ohms": ohms}
+            pilas[i] = pila_data
             encontrado = True
             break
     if not encontrado:
-        pilas.append({"nombre": nombre, "carga": carga, "ohms": ohms})
+        pilas.append(pila_data)
 
     # Guardar en JSON con nuevo formato
     data_to_save = {
@@ -191,13 +286,13 @@ def agregar():
         'pilas_en_cooldown': pilas_en_cooldown,
         'pilas_inhabilitadas': list(pilas_inhabilitadas)
     }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
 
     # Guardar fecha y hora de actualización
     ultima_actualizacion = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    return redirect('/')
+    return redirect('/main')
 
 @app.route('/pila_en_uso', methods=['POST'])
 def marcar_pila_en_uso():
@@ -218,10 +313,10 @@ def marcar_pila_en_uso():
         'pilas_en_cooldown': pilas_en_cooldown,
         'pilas_inhabilitadas': list(pilas_inhabilitadas)
     }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
 
-    return redirect('/')
+    return redirect('/main')
 
 
 @app.route('/toggle_inhabilitar', methods=['POST'])
@@ -229,7 +324,7 @@ def toggle_inhabilitar():
     global pilas_inhabilitadas
     nombre = request.form.get('nombre')
     if not nombre:
-        return redirect('/')
+        return redirect('/main')
 
     if nombre in pilas_inhabilitadas:
         pilas_inhabilitadas.remove(nombre)
@@ -243,10 +338,10 @@ def toggle_inhabilitar():
         'pilas_en_cooldown': pilas_en_cooldown,
         'pilas_inhabilitadas': list(pilas_inhabilitadas)
     }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
 
-    return redirect('/')
+    return redirect('/main')
 
 @app.route('/recibir_pila', methods=['POST'])
 def recibir_pila():
@@ -275,10 +370,10 @@ def recibir_pila():
         'pilas_en_cooldown': pilas_en_cooldown,
         'pilas_inhabilitadas': list(pilas_inhabilitadas)
     }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
-    
-    return redirect('/')
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
+
+    return redirect('/main')
 
 @app.route('/reiniciar', methods=['POST'])
 def reiniciar():
@@ -297,10 +392,21 @@ def reiniciar():
         'pilas_en_cooldown': pilas_en_cooldown,
         'pilas_inhabilitadas': list(pilas_inhabilitadas)
     }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
-    
-    return redirect('/')
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
+
+    return redirect('/main')
+
+@app.route('/set_mode', methods=['POST'])
+def set_mode():
+    global config, battery_names_data
+    mode = request.form.get('mode')
+    if mode in ['FTC', 'FRC']:
+        config['competition_mode'] = mode
+        save_config(config)
+        # Reload battery names data after mode change
+        battery_names_data = load_battery_names()
+    return redirect('/main')
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
