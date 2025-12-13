@@ -101,7 +101,9 @@ if os.path.exists(data_file):
                 pilas = data.get('pilas', [])
                 # Compatibilidad: si existe 'pila_en_uso' (string), convertir a lista
                 if 'pilas_en_uso' in data:
-                    pilas_en_uso = data.get('pilas_en_uso') or []
+                    pilas_en_uso_raw = data.get('pilas_en_uso') or []
+                    # Clean the list to remove None and empty values
+                    pilas_en_uso = [p for p in pilas_en_uso_raw if p is not None and p != '']
                 else:
                     single = data.get('pila_en_uso', None)
                     pilas_en_uso = [single] if single else []
@@ -164,7 +166,10 @@ def index():
         except Exception:
             continue
 
-    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas))
+    # Ensure pilas_en_uso is always a clean list (no None or Undefined values)
+    pilas_en_uso_clean = [p for p in pilas_en_uso if p is not None and p != '']
+
+    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso_clean, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas))
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
