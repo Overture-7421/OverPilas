@@ -105,7 +105,7 @@ Solución: Si tienes una copia de seguridad de los archivos JSON, cópialos
 UBICACIÓN DEL EJECUTABLE
 -------------------------
 El archivo OverPilas.exe se encuentra en:
-D:\1.SQM\2.OVERTURE\OverPilas\dist\OverPilas.exe
+dist\OverPilas.exe
 
 
 RECOMENDACIONES
@@ -120,6 +120,3 @@ CONTACTO
 Para soporte técnico, contacta a: Rigo
 
 
-================================================================================
-                         ¡Buena suerte en la competencia!
-================================================================================

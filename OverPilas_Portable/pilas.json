@@ -1,1 +1,1 @@
-{"pilas": [], "pilas_en_uso": [], "pilas_en_cooldown": {}, "pilas_inhabilitadas": []}
+{"pilas": [{"nombre": "Laura", "carga": "N/A", "ohms": "N/A"}, {"nombre": "Martín", "carga": "N/A", "ohms": "N/A"}], "pilas_en_uso": [], "pilas_en_cooldown": {}, "pilas_inhabilitadas": [], "pilas_timestamps": {"Laura": "2026-01-28 18:41", "Martín": "2026-01-28 18:43"}}

@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, redirect, jsonify
-import json, os
+import json, os, webbrowser, threading
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -61,13 +61,12 @@ def get_nombres_fijos():
         # Por defecto, usar FRC si no hay modo configurado
         return battery_names_data.get('FRC', [])
 
-# Obtener tiempo de cooldown según el modo (en segundos)
 def get_cooldown_time():
     mode = config.get('competition_mode')
     if mode == 'FTC':
-        return 900  # 15 minutos
-    else:  # FRC o default
-        return 1800  # 30 minutos
+        return 900  
+    else:  
+        return 1800 
 
 def es_pila_lista_para_conectar(nombre):
     """Verifica si una pila está lista para conectar"""
@@ -76,7 +75,6 @@ def es_pila_lista_para_conectar(nombre):
     if not pila:
         return True
 
-    # Si está en cooldown, verificar si han pasado el tiempo según el modo
     if nombre in pilas_en_cooldown:
         timestamp_cooldown = datetime.strptime(pilas_en_cooldown[nombre], "%Y-%m-%d %H:%M")
         tiempo_transcurrido = datetime.now() - timestamp_cooldown
@@ -95,25 +93,21 @@ def obtener_pilas_listas_para_conectar():
 
     for nombre in nombres_fijos:
         if nombre in pilas_en_uso:
-            continue  # Saltar pilas que estén en uso
+            continue  
             
         if es_pila_lista_para_conectar(nombre):
-            # Determinar tiempo sin conectar
             tiempo_sin_conectar = None
             
-            # Si está en cooldown y ya pasó el tiempo
             if nombre in pilas_en_cooldown:
                 timestamp_cooldown = datetime.strptime(pilas_en_cooldown[nombre], "%Y-%m-%d %H:%M")
                 tiempo_transcurrido = datetime.now() - timestamp_cooldown
 
-                # Si ya pasó el tiempo de cooldown, marcar para limpiar
                 if tiempo_transcurrido.total_seconds() >= cooldown_seconds:
                     cooldowns_a_limpiar.append(nombre)
                     tiempo_sin_conectar = timestamp_cooldown
                 else:
-                    continue  # Todavía está en cooldown, no agregarlo a la lista
+                    continue 
             else:
-                # Si no tiene datos, usar tiempo muy antiguo para que aparezca primero
                 tiempo_sin_conectar = datetime(2000, 1, 1)
             
             pilas_listas.append({
@@ -122,11 +116,9 @@ def obtener_pilas_listas_para_conectar():
                 'disabled': (nombre in pilas_inhabilitadas)
             })
     
-    # Limpiar cooldowns que ya completaron los 30 minutos
     for nombre in cooldowns_a_limpiar:
         del pilas_en_cooldown[nombre]
     
-    # Si se limpiaron cooldowns, guardar los cambios
     if cooldowns_a_limpiar:
         data_to_save = {
             'pilas': pilas,
@@ -136,32 +128,24 @@ def obtener_pilas_listas_para_conectar():
         with open(data_file, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f, ensure_ascii=False)
     
-    # Ordenar: primero por disabled (False primero), luego por tiempo sin conectar (más antiguos primero)
     pilas_listas.sort(key=lambda x: (x.get('disabled', False), x['tiempo_sin_conectar']))
     
     return pilas_listas
 
-# Cargar datos existentes de forma segura
 pilas = []
-ultima_actualizacion = None  # Guardará la fecha y hora
-# Ahora soportamos hasta 2 pilas en uso
-pilas_en_uso = []  # Lista de nombres de pilas en uso
-# Guardará {nombre: timestamp} de pilas en cooldown
+ultima_actualizacion = None 
+pilas_en_uso = []  
 pilas_en_cooldown = {}
-# Pilas inhabilitadas (no aparecerán como "listas" y se mostrarán gris)
 pilas_inhabilitadas = set()
-# Nota: mantenemos compatibilidad con el formato antiguo que usaba 'pila_en_uso'
+pilas_timestamps = {}
 if os.path.exists(data_file):
     try:
         with open(data_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):
-                # Formato anterior - solo lista de pilas
                 pilas = data
             else:
-                # Formato nuevo - objeto con pilas, pilas_en_uso/pila_en_uso y cooldowns
                 pilas = data.get('pilas', [])
-                # Compatibilidad: si existe 'pila_en_uso' (string), convertir a lista
                 if 'pilas_en_uso' in data:
                     pilas_en_uso = data.get('pilas_en_uso') or []
                 else:
@@ -169,6 +153,7 @@ if os.path.exists(data_file):
                     pilas_en_uso = [single] if single else []
                 pilas_en_cooldown = data.get('pilas_en_cooldown', {})
                 pilas_inhabilitadas = set(data.get('pilas_inhabilitadas', []) or [])
+                pilas_timestamps = data.get('pilas_timestamps', {})
     except json.JSONDecodeError:
         pilas = []
 
@@ -216,11 +201,9 @@ def main():
     
     listado_ordenado = sorted(listado, key=key_ordenamiento)
 
-    # Calcular próximo chequeo si hay última actualización
     proximo_chequeo = None
     if ultima_actualizacion:
         try:
-            # Convertir la fecha de string a datetime y sumar el tiempo de cooldown
             fecha_actualizacion = datetime.strptime(ultima_actualizacion, "%Y-%m-%d %H:%M")
             cooldown_minutes = get_cooldown_time() // 60
             proximo = fecha_actualizacion + timedelta(minutes=cooldown_minutes)
@@ -228,10 +211,8 @@ def main():
         except:
             proximo_chequeo = None
 
-    # Obtener pilas listas para conectar
     pilas_listas = obtener_pilas_listas_para_conectar()
 
-    # Determinar la mejor pila disponible (primera con carga válida, no en uso y no en cooldown)
     mejor_pila = None
     for p in listado_ordenado:
         try:
@@ -240,6 +221,33 @@ def main():
                 break
         except Exception:
             continue
+
+    tiempos_restantes = {}
+    cooldown_seconds = get_cooldown_time()
+    for nombre, timestamp_str in pilas_en_cooldown.items():
+        try:
+            timestamp_cooldown = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
+            tiempo_transcurrido = datetime.now() - timestamp_cooldown
+            tiempo_restante_segundos = cooldown_seconds - tiempo_transcurrido.total_seconds()
+            
+            if tiempo_restante_segundos > 0:
+                tiempo_restante_minutos = int(tiempo_restante_segundos / 60) + (1 if tiempo_restante_segundos % 60 > 0 else 0)
+                tiempos_restantes[nombre] = tiempo_restante_minutos
+            else:
+                tiempos_restantes[nombre] = 0
+        except Exception:
+            tiempos_restantes[nombre] = 0
+    
+    tiempos_transcurridos = {}
+    for nombre, timestamp_str in pilas_timestamps.items():
+        try:
+            timestamp_registro = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M")
+            tiempo_desde_registro = datetime.now() - timestamp_registro
+            # Convertir a minutos
+            minutos_transcurridos = int(tiempo_desde_registro.total_seconds() / 60)
+            tiempos_transcurridos[nombre] = minutos_transcurridos
+        except Exception:
+            tiempos_transcurridos[nombre] = 0
 
     return render_template('index.html',
                          pilas=listado_ordenado,
@@ -252,22 +260,19 @@ def main():
                          pilas_inhabilitadas=list(pilas_inhabilitadas),
                          competition_mode=config.get('competition_mode'),
                          nombres_fijos=get_nombres_fijos(),
-                         cooldown_minutes=get_cooldown_time()//60)
+                         cooldown_minutes=get_cooldown_time()//60,
+                         tiempos_restantes=tiempos_restantes,
+                         tiempos_transcurridos=tiempos_transcurridos)
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
-    global ultima_actualizacion
+    global ultima_actualizacion, pilas_timestamps
 
     nombre = request.form['nombre']
-    mode = config.get('competition_mode')
-
-    # Para FTC, solo necesitamos el nombre (sin carga ni ohms)
-    if mode == 'FTC':
-        pila_data = {"nombre": nombre, "carga": "N/A", "ohms": "N/A"}
-    else:  # FRC o default
-        carga = request.form['carga']
-        ohms = request.form['ohms']
-        pila_data = {"nombre": nombre, "carga": carga, "ohms": ohms}
+    
+    # "Cargar Pila" solo registra el nombre y comienza el timer
+    # No importa el modo - siempre N/A hasta que se registre
+    pila_data = {"nombre": nombre, "carga": "N/A", "ohms": "N/A"}
 
     # Reemplazar si ya existe
     encontrado = False
@@ -278,40 +283,79 @@ def agregar():
             break
     if not encontrado:
         pilas.append(pila_data)
+    
+    # Registrar timestamp de cuando se agregó/actualizó la pila
+    pilas_timestamps[nombre] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     # Guardar en JSON con nuevo formato
     data_to_save = {
         'pilas': pilas,
         'pilas_en_uso': pilas_en_uso,
         'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
     }
     with open(data_file, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, ensure_ascii=False)
 
-    # Guardar fecha y hora de actualización
+    ultima_actualizacion = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    return redirect('/main')
+
+@app.route('/registrar', methods=['POST'])
+def registrar():
+    global ultima_actualizacion
+
+    nombre = request.form['nombre']
+    carga = request.form['carga']
+    ohms = request.form['ohms']
+    
+    pila_data = {"nombre": nombre, "carga": carga, "ohms": ohms}
+
+    encontrado = False
+    for i, pila in enumerate(pilas):
+        if pila['nombre'] == nombre:
+            pilas[i] = pila_data
+            encontrado = True
+            break
+    if not encontrado:
+        pilas.append(pila_data)
+        if nombre not in pilas_timestamps:
+            pilas_timestamps[nombre] = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    data_to_save = {
+        'pilas': pilas,
+        'pilas_en_uso': pilas_en_uso,
+        'pilas_en_cooldown': pilas_en_cooldown,
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
+    }
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, ensure_ascii=False)
+
     ultima_actualizacion = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     return redirect('/main')
 
 @app.route('/pila_en_uso', methods=['POST'])
 def marcar_pila_en_uso():
-    global pilas_en_uso
+    global pilas_en_uso, pilas_timestamps
 
     nombre = request.form['nombre']
-    # Si no está en la lista de pilas en uso, agregarla (sin límite)
     if nombre not in pilas_en_uso:
         pilas_en_uso.append(nombre)
 
-    # Borrar los datos de la pila seleccionada de la lista de pilas registradas
     pilas[:] = [pila for pila in pilas if pila['nombre'] != nombre]
+    
+    if nombre in pilas_timestamps:
+        del pilas_timestamps[nombre]
 
-    # Guardar en JSON con nuevo formato
     data_to_save = {
         'pilas': pilas,
         'pilas_en_uso': pilas_en_uso,
         'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
     }
     with open(data_file, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, ensure_ascii=False)
@@ -331,12 +375,12 @@ def toggle_inhabilitar():
     else:
         pilas_inhabilitadas.add(nombre)
 
-    # Guardar cambios
     data_to_save = {
         'pilas': pilas,
         'pilas_en_uso': pilas_en_uso,
         'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
     }
     with open(data_file, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, ensure_ascii=False)
@@ -345,11 +389,10 @@ def toggle_inhabilitar():
 
 @app.route('/recibir_pila', methods=['POST'])
 def recibir_pila():
-    global pilas_en_cooldown
+    global pilas_en_cooldown, pilas_timestamps
     
     nombre = request.form['nombre']
     
-    # Remover de pila_en_uso si era la que estaba en uso
     global pilas_en_uso
     try:
         if nombre in pilas_en_uso:
@@ -360,7 +403,9 @@ def recibir_pila():
     # Borrar los datos de la pila si existen
     pilas[:] = [pila for pila in pilas if pila['nombre'] != nombre]
     
-    # Marcar como en cooldown con timestamp actual
+    if nombre in pilas_timestamps:
+        del pilas_timestamps[nombre]
+    
     pilas_en_cooldown[nombre] = datetime.now().strftime("%Y-%m-%d %H:%M")
     
     # Guardar en JSON con nuevo formato
@@ -368,7 +413,8 @@ def recibir_pila():
         'pilas': pilas,
         'pilas_en_uso': pilas_en_uso,
         'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
     }
     with open(data_file, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, ensure_ascii=False)
@@ -377,12 +423,13 @@ def recibir_pila():
 
 @app.route('/reiniciar', methods=['POST'])
 def reiniciar():
-    global pilas, pilas_en_uso, pilas_en_cooldown, ultima_actualizacion
+    global pilas, pilas_en_uso, pilas_en_cooldown, ultima_actualizacion, pilas_timestamps
 
     # Reiniciar todas las variables globales
     pilas = []
     pilas_en_uso = []
     pilas_en_cooldown = {}
+    pilas_timestamps = {}
     ultima_actualizacion = None
 
     # Guardar el estado limpio en JSON
@@ -390,7 +437,8 @@ def reiniciar():
         'pilas': pilas,
         'pilas_en_uso': pilas_en_uso,
         'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'pilas_timestamps': pilas_timestamps
     }
     with open(data_file, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, ensure_ascii=False)
@@ -409,4 +457,13 @@ def set_mode():
     return redirect('/main')
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    # Función para abrir el navegador automáticamente
+    def open_browser():
+        webbrowser.open('http://127.0.0.1:5000/')
+    
+    # Abrir el navegador después de 1.5 segundos (dar tiempo a que Flask inicie)
+    threading.Timer(1.5, open_browser).start()
+    
+    # Iniciar el servidor Flask
+    app.run(host='127.0.0.1', port=5000, debug=True, use_reloader=False)
+
