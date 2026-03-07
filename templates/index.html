@@ -392,26 +392,9 @@
                     <label>Nombre:</label>
                     <select name="nombre" required>
                         <option value="">--Selecciona--</option>
-                        <option value="Tlacua">Tlacua</option>
-                        <option value="Jasper">Jasper</option>
-                        <option value="Caditos">Caditos</option>
-                        <option value="Timmy">Timmy</option>
-                        <option value="Thunderbird">Thunderbird</option>
-                        <option value="Miguelito">Miguelito</option>
-                        <option value="Cesarín">Cesarín</option>
-                        <option value="El tío">El tío</option>
-                        <option value="Chopper">Chopper</option>
-                        <option value="Gaia">Gaia</option>
-                        <option value="Gipsy">Gipsy</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
+                        {% for nombre in nombres_fijos %}
+                        <option value="{{ nombre }}">{{ nombre }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -435,26 +418,9 @@
                 Seleccionar pila en uso:
                 <select name="nombre" required>
                     <option value="">--Selecciona pila--</option>
-                    <option value="Tlacua">Tlacua</option>
-                    <option value="Jasper">Jasper</option>
-                    <option value="Caditos">Caditos</option>
-                    <option value="Timmy">Timmy</option>
-                    <option value="Thunderbird">Thunderbird</option>
-                    <option value="Miguelito">Miguelito</option>
-                    <option value="Cesarín">Cesarín</option>
-                    <option value="El tío">El tío</option>
-                    <option value="Chopper">Chopper</option>
-                    <option value="Gaia">Gaia</option>
-                    <option value="Gipsy">Gipsy</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
+                    {% for nombre in nombres_fijos %}
+                    <option value="{{ nombre }}">{{ nombre }}</option>
+                    {% endfor %}
                 </select><br><br>
                 <button type="submit">Marcar como en uso</button>
             </form>
@@ -466,26 +432,9 @@
                 Seleccionar pila recibida:
                 <select name="nombre" required>
                     <option value="">--Selecciona pila--</option>
-                    <option value="Tlacua">Tlacua</option>
-                    <option value="Jasper">Jasper</option>
-                    <option value="Caditos">Caditos</option>
-                    <option value="Timmy">Timmy</option>
-                    <option value="Thunderbird">Thunderbird</option>
-                    <option value="Miguelito">Miguelito</option>
-                    <option value="Cesarín">Cesarín</option>
-                    <option value="El tío">El tío</option>
-                    <option value="Chopper">Chopper</option>
-                    <option value="Gaia">Gaia</option>
-                    <option value="Gipsy">Gipsy</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
+                    {% for nombre in nombres_fijos %}
+                    <option value="{{ nombre }}">{{ nombre }}</option>
+                    {% endfor %}
                 </select><br><br>
                 <button type="submit">Marcar como recibida</button>
             </form>

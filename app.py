@@ -6,7 +6,7 @@ app = Flask(__name__)
 data_file = 'pilas.json'
 
 # Lista fija de nombres
-nombres_fijos = ["Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
+nombres_fijos = ["Western Bacon", "Bolillo", "Marcela", "Billie", "Simi","Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
                 "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
                 "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
@@ -164,7 +164,7 @@ def index():
         except Exception:
             continue
 
-    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas))
+    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas), nombres_fijos=nombres_fijos)
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
