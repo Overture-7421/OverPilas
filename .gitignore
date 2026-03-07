@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+*.eggs/
+*.log
+*.sqlite3
+*.db
+
+# Flask
+instance/
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Executables
+*.exe
+*.out
+*.app
+
+# VS Code
+.vscode/
+
+# Other
+*.bak
+*.swp
+*.tmp
+
+# Do not commit compiled binaries or platform-specific builds
