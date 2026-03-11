@@ -1,47 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
 
 a = Analysis(
-    ['launcher.py'],
+    ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('templates', 'templates'),
-        ('static', 'static'),
-    ],
-    hiddenimports=[
-        'flask',
-        'jinja2',
-        'werkzeug',
-        'markupsafe',
-        'itsdangerous',
-        'click',
-        'json',
-        'datetime',
-        'threading',
-        'webbrowser',
-        'time',
-        'os',
-        'sys'
-    ],
+    datas=[('templates', 'templates'), ('static', 'static')],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
     noarchive=False,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
-    a.zipfiles,
     a.datas,
     [],
     name='OverPilas',
@@ -57,5 +34,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # You can add an icon file here if you have one
 )
