@@ -11,10 +11,23 @@ else:
     app = Flask(__name__)
 data_file = 'pilas.json'
 
+categorias_inventario = ["Mecánica", "Eléctrica", "Scouting", "Negocios"]
+
 # Lista fija de nombres
 nombres_fijos = ["Western Bacon", "Bolillo", "Marcela", "Billie", "Simi","Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
                 "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
                 "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+def guardar_datos():
+    data_to_save = {
+        'pilas': pilas,
+        'pilas_en_uso': pilas_en_uso,
+        'pilas_en_cooldown': pilas_en_cooldown,
+        'pilas_inhabilitadas': list(pilas_inhabilitadas),
+        'inventario_items': inventario_items
+    }
+    with open(data_file, 'w') as f:
+        json.dump(data_to_save, f)
 
 def es_pila_lista_para_conectar(nombre):
     """Verifica si una pila está lista para conectar"""
@@ -72,13 +85,7 @@ def obtener_pilas_listas_para_conectar():
     
     # Si se limpiaron cooldowns, guardar los cambios
     if cooldowns_a_limpiar:
-        data_to_save = {
-            'pilas': pilas,
-            'pilas_en_uso': pilas_en_uso,
-            'pilas_en_cooldown': pilas_en_cooldown
-        }
-        with open(data_file, 'w') as f:
-            json.dump(data_to_save, f)
+        guardar_datos()
     
     # Ordenar: primero por disabled (False primero), luego por tiempo sin conectar (más antiguos primero)
     pilas_listas.sort(key=lambda x: (x.get('disabled', False), x['tiempo_sin_conectar']))
@@ -94,6 +101,8 @@ pilas_en_uso = []  # Lista de nombres de pilas en uso
 pilas_en_cooldown = {}
 # Pilas inhabilitadas (no aparecerán como "listas" y se mostrarán gris)
 pilas_inhabilitadas = set()
+# Inventario persistente
+inventario_items = []
 # Nota: mantenemos compatibilidad con el formato antiguo que usaba 'pila_en_uso'
 if os.path.exists(data_file):
     try:
@@ -113,11 +122,15 @@ if os.path.exists(data_file):
                     pilas_en_uso = [single] if single else []
                 pilas_en_cooldown = data.get('pilas_en_cooldown', {})
                 pilas_inhabilitadas = set(data.get('pilas_inhabilitadas', []) or [])
+                inventario_items = data.get('inventario_items', []) or []
     except json.JSONDecodeError:
         pilas = []
 
 @app.route('/')
 def index():
+    active_tab = request.args.get('tab', 'pilas')
+    active_inv_section = request.args.get('inv_section', '')
+
     # Crear lista completa para mostrar
     listado = []
     for nombre in nombres_fijos:
@@ -170,7 +183,44 @@ def index():
         except Exception:
             continue
 
-    return render_template('index.html', pilas=listado_ordenado, ultima_actualizacion=ultima_actualizacion, proximo_chequeo=proximo_chequeo, pilas_en_uso=pilas_en_uso, pilas_en_cooldown=pilas_en_cooldown, pilas_listas=pilas_listas, mejor_pila=mejor_pila, pilas_inhabilitadas=list(pilas_inhabilitadas), nombres_fijos=nombres_fijos)
+    inventario_por_categoria = {}
+    for categoria in categorias_inventario:
+        # Mantener orden de inserción para que los objetos nuevos queden al final de la lista.
+        inventario_por_categoria[categoria] = [
+            item for item in inventario_items if item.get('categoria') == categoria
+        ]
+
+    def estado_checkout(item):
+        estado = item.get('checkout_state')
+        if estado in ('pending', 'retry', 'checked'):
+            return estado
+        return 'checked' if item.get('checked_out', False) else 'pending'
+
+    checkout_pendientes_lista = [item for item in inventario_items if estado_checkout(item) == 'pending']
+    checkout_reintentos_lista = [item for item in inventario_items if estado_checkout(item) == 'retry']
+    checkout_actual = checkout_pendientes_lista[0] if checkout_pendientes_lista else (
+        checkout_reintentos_lista[0] if checkout_reintentos_lista else None
+    )
+
+    return render_template(
+        'index.html',
+        pilas=listado_ordenado,
+        ultima_actualizacion=ultima_actualizacion,
+        proximo_chequeo=proximo_chequeo,
+        pilas_en_uso=pilas_en_uso,
+        pilas_en_cooldown=pilas_en_cooldown,
+        pilas_listas=pilas_listas,
+        mejor_pila=mejor_pila,
+        pilas_inhabilitadas=list(pilas_inhabilitadas),
+        nombres_fijos=nombres_fijos,
+        active_tab=active_tab,
+        active_inv_section=active_inv_section,
+        categorias_inventario=categorias_inventario,
+        inventario_por_categoria=inventario_por_categoria,
+        inventario_total=len(inventario_items),
+        checkout_pendientes=len(checkout_pendientes_lista) + len(checkout_reintentos_lista),
+        checkout_actual=checkout_actual
+    )
 
 @app.route('/agregar', methods=['POST'])
 def agregar():
@@ -191,14 +241,7 @@ def agregar():
         pilas.append({"nombre": nombre, "carga": carga, "ohms": ohms})
 
     # Guardar en JSON con nuevo formato
-    data_to_save = {
-        'pilas': pilas,
-        'pilas_en_uso': pilas_en_uso,
-        'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
-    }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    guardar_datos()
 
     # Guardar fecha y hora de actualización
     ultima_actualizacion = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -218,14 +261,7 @@ def marcar_pila_en_uso():
     pilas[:] = [pila for pila in pilas if pila['nombre'] != nombre]
 
     # Guardar en JSON con nuevo formato
-    data_to_save = {
-        'pilas': pilas,
-        'pilas_en_uso': pilas_en_uso,
-        'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
-    }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    guardar_datos()
 
     return redirect('/')
 
@@ -243,14 +279,7 @@ def toggle_inhabilitar():
         pilas_inhabilitadas.add(nombre)
 
     # Guardar cambios
-    data_to_save = {
-        'pilas': pilas,
-        'pilas_en_uso': pilas_en_uso,
-        'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
-    }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    guardar_datos()
 
     return redirect('/')
 
@@ -275,38 +304,141 @@ def recibir_pila():
     pilas_en_cooldown[nombre] = datetime.now().strftime("%Y-%m-%d %H:%M")
     
     # Guardar en JSON con nuevo formato
-    data_to_save = {
-        'pilas': pilas,
-        'pilas_en_uso': pilas_en_uso,
-        'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
-    }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    guardar_datos()
     
     return redirect('/')
 
 @app.route('/reiniciar', methods=['POST'])
 def reiniciar():
-    global pilas, pilas_en_uso, pilas_en_cooldown, ultima_actualizacion
+    global pilas, pilas_en_uso, pilas_en_cooldown, ultima_actualizacion, inventario_items
 
     # Reiniciar todas las variables globales
     pilas = []
     pilas_en_uso = []
     pilas_en_cooldown = {}
+    inventario_items = []
     ultima_actualizacion = None
 
     # Guardar el estado limpio en JSON
-    data_to_save = {
-        'pilas': pilas,
-        'pilas_en_uso': pilas_en_uso,
-        'pilas_en_cooldown': pilas_en_cooldown,
-        'pilas_inhabilitadas': list(pilas_inhabilitadas)
-    }
-    with open(data_file, 'w') as f:
-        json.dump(data_to_save, f)
+    guardar_datos()
     
     return redirect('/')
+
+@app.route('/inventario/checkin', methods=['POST'])
+def inventario_checkin():
+    nombre = request.form.get('nombre', '').strip()
+    categoria = request.form.get('categoria', '').strip()
+    cantidad_raw = request.form.get('cantidad', '1').strip() or '1'
+
+    try:
+        cantidad = int(cantidad_raw)
+    except ValueError:
+        cantidad = 1
+
+    if cantidad < 1:
+        cantidad = 1
+
+    if not nombre or categoria not in categorias_inventario:
+        return redirect('/?tab=inventario&inv_section=checkin')
+
+    existente = next(
+        (
+            item for item in inventario_items
+            if item.get('categoria') == categoria and item.get('nombre', '').lower() == nombre.lower()
+        ),
+        None
+    )
+
+    if existente:
+        existente['cantidad'] = int(existente.get('cantidad', 0)) + cantidad
+        existente['checked_out'] = False
+        existente['checkout_state'] = 'pending'
+        existente['last_checked_out'] = None
+    else:
+        inventario_items.append({
+            'id': f"inv-{int(datetime.now().timestamp() * 1000)}-{len(inventario_items) + 1}",
+            'nombre': nombre,
+            'cantidad': cantidad,
+            'categoria': categoria,
+            'checked_out': False,
+            'checkout_state': 'pending',
+            'last_checked_out': None,
+            'created_at': datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+
+    guardar_datos()
+    return redirect('/?tab=inventario&inv_section=checkin')
+
+@app.route('/inventario/iniciar_checkout', methods=['POST'])
+def inventario_iniciar_checkout():
+    for item in inventario_items:
+        item['checked_out'] = False
+        item['checkout_state'] = 'pending'
+        item['last_checked_out'] = None
+
+    guardar_datos()
+    return redirect('/?tab=inventario')
+
+@app.route('/inventario/check_item', methods=['POST'])
+def inventario_check_item():
+    item_id = request.form.get('id', '').strip()
+    if not item_id:
+        return redirect('/?tab=inventario&inv_section=checkout')
+
+    item = next((it for it in inventario_items if it.get('id') == item_id), None)
+    if item:
+        item['checked_out'] = True
+        item['checkout_state'] = 'checked'
+        item['last_checked_out'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        guardar_datos()
+
+    return redirect('/?tab=inventario&inv_section=checkout')
+
+@app.route('/inventario/check_item_missing', methods=['POST'])
+def inventario_check_item_missing():
+    item_id = request.form.get('id', '').strip()
+    if not item_id:
+        return redirect('/?tab=inventario&inv_section=checkout')
+
+    for idx, item in enumerate(inventario_items):
+        if item.get('id') == item_id:
+            item['checked_out'] = False
+            item['checkout_state'] = 'retry'
+            item['last_checked_out'] = None
+            # Enviar al final para volver a preguntarlo cuando termine el resto.
+            inventario_items.append(inventario_items.pop(idx))
+            guardar_datos()
+            break
+
+    return redirect('/?tab=inventario&inv_section=checkout')
+
+@app.route('/inventario/eliminar', methods=['POST'])
+def inventario_eliminar():
+    item_id = request.form.get('id', '').strip()
+    if not item_id:
+        return redirect('/?tab=inventario')
+
+    inventario_items[:] = [item for item in inventario_items if item.get('id') != item_id]
+    guardar_datos()
+
+    return redirect('/?tab=inventario')
+
+@app.route('/inventario/reiniciar', methods=['POST'])
+def inventario_reiniciar():
+    inventario_items.clear()
+    guardar_datos()
+
+    return redirect('/?tab=inventario')
+
+@app.route('/inventario/reiniciar_checkout', methods=['POST'])
+def inventario_reiniciar_checkout():
+    for item in inventario_items:
+        item['checked_out'] = False
+        item['checkout_state'] = 'pending'
+        item['last_checked_out'] = None
+
+    guardar_datos()
+    return redirect('/?tab=inventario&inv_section=checkout')
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)

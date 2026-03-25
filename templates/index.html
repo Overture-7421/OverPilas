@@ -324,6 +324,12 @@
         .modal-box h3 { margin-top: 0; color: #4B0082; }
         .modal-input { width: 100%; padding: 8px; margin: 8px 0; border-radius: 6px; border: 1px solid #E6E6FA; }
         .modal-actions { display:flex; justify-content: flex-end; gap:8px; margin-top:10px; }
+        #login-modal .modal-box { text-align: center; }
+        #login-modal .modal-input { max-width: 220px; margin-left: auto; margin-right: auto; }
+        #login-modal .modal-actions { justify-content: center; }
+        #reset-confirm-modal .modal-box { text-align: center; }
+        #reset-confirm-modal .modal-actions { justify-content: center; }
+        #reset-confirm-input { max-width: 220px; margin-left: auto; margin-right: auto; }
         .matches-form {
             display: flex;
             gap: 10px;
@@ -353,6 +359,158 @@
         .match-details { text-align: left; }
 
         .match-actions button { margin-left: 8px; }
+
+        .inventario-layout {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .inventario-card {
+            background: #FFFFFF;
+            border: 2px solid #BBD7E8;
+            border-radius: 10px;
+            padding: 16px;
+            min-width: 300px;
+            max-width: 500px;
+            flex: 1;
+            text-align: left;
+        }
+
+        .inventario-card.mecanica {
+            border-color: #EF4444;
+            background: #FFF5F5;
+        }
+
+        .inventario-card.electrica {
+            border-color: #3B82F6;
+            background: #F5F9FF;
+        }
+
+        .inventario-card.scouting {
+            border-color: #22C55E;
+            background: #F2FFF6;
+        }
+
+        .inventario-card.negocios {
+            border-color: #EC4899;
+            background: #FFF3FA;
+        }
+
+        .inventario-badge {
+            display: inline-block;
+            background: #DBEAFE;
+            color: #1E3A8A;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .inventario-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            margin: 8px 0;
+            background: #F9FAFB;
+        }
+
+        .mini-action-btn {
+            padding: 6px 10px;
+            font-size: 13px;
+            border-radius: 8px;
+            min-width: 90px;
+        }
+
+        .inventario-acciones {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .categoria-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 6px 0 12px 0;
+        }
+
+        .categoria-tile {
+            border: 2px solid #CBD5E1;
+            background: #FFFFFF;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .categoria-tile:hover {
+            border-color: #94A3B8;
+            transform: translateY(-1px);
+        }
+
+        .categoria-tile[data-categoria="Mecánica"] {
+            border-color: #EF4444;
+            background: #FFF1F1;
+            color: #7F1D1D;
+        }
+
+        .categoria-tile[data-categoria="Eléctrica"] {
+            border-color: #3B82F6;
+            background: #EFF6FF;
+            color: #1E3A8A;
+        }
+
+        .categoria-tile[data-categoria="Scouting"] {
+            border-color: #22C55E;
+            background: #F0FDF4;
+            color: #14532D;
+        }
+
+        .categoria-tile[data-categoria="Negocios"] {
+            border-color: #EC4899;
+            background: #FDF2F8;
+            color: #831843;
+        }
+
+        .categoria-tile.selected {
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
+            filter: saturate(1.1);
+        }
+
+        .inventario-reset-group {
+            position: fixed;
+            bottom: 80px;
+            right: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .inventario-reset-btn {
+            background: linear-gradient(135deg, #EA580C, #F97316);
+            color: white;
+            border: none;
+            padding: 12px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+            font-size: 14px;
+        }
+
+        .inventario-reset-btn:hover {
+            background: linear-gradient(135deg, #C2410C, #EA580C);
+        }
     </style>
 </head>
 <body>
@@ -376,6 +534,7 @@
         <div class="tab active" data-target="panel-pilas" role="tab" aria-selected="true">Pilas</div>
         <div class="tab" data-target="panel-matches" role="tab" aria-selected="false">Matches</div>
         <div class="tab" data-target="panel-prestados" role="tab" aria-selected="false">Cosas Prestadas</div>
+        <div class="tab" data-target="panel-inventario" role="tab" aria-selected="false">Inventario</div>
     </div>
 
     <div class="tab-panel" id="panel-pilas" role="tabpanel">
@@ -536,10 +695,98 @@
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px;">
                 <h3 style="margin:0;">Cosas Devueltas</h3>
-                <button id="clear-devueltos" style="background:linear-gradient(135deg,#FDBA74,#F59E0B); color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer;">Limpiar Devueltos</button>
             </div>
             <div id="devueltos-list">
                 <p style="color:#6B7280; text-align:center;">No hay items devueltos.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-inventario" role="tabpanel" style="display:none;">
+        <div class="matches-content">
+            <h2>Inventario</h2>
+
+            <div class="inventario-acciones">
+                <button type="button" class="mini-action-btn" onclick="toggleInventarioSection('checkin')">Check In</button>
+                <button type="button" class="mini-action-btn" onclick="toggleInventarioSection('checkout')">Check Out</button>
+            </div>
+
+            <div class="inventario-layout" id="inventario-controles" style="display:none;">
+                <div class="inventario-card" id="inventario-checkin-card" style="display:none;">
+                    <h3 style="margin-top:0; color:#0F766E;">Check In</h3>
+                    <form action="/inventario/checkin" method="post">
+                        <div class="campo-linea">
+                            <label>Nombre:</label>
+                            <input name="nombre" type="text" required>
+                        </div>
+                        <div class="campo-linea">
+                            <label>Cantidad:</label>
+                            <input name="cantidad" type="number" min="1" value="1" required>
+                        </div>
+                        <div>
+                            <label style="font-weight:bold;">Categoría:</label>
+                            <div class="categoria-grid">
+                                <button type="submit" class="categoria-tile" name="categoria" value="Mecánica" data-categoria="Mecánica">Mecánica</button>
+                                <button type="submit" class="categoria-tile" name="categoria" value="Eléctrica" data-categoria="Eléctrica">Eléctrica</button>
+                                <button type="submit" class="categoria-tile" name="categoria" value="Scouting" data-categoria="Scouting">Scouting</button>
+                                <button type="submit" class="categoria-tile" name="categoria" value="Negocios" data-categoria="Negocios">Negocios</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="inventario-card" id="inventario-checkout-card" style="display:none;">
+                    <h3 style="margin-top:0; color:#7C2D12;">Check Out</h3>
+
+                    {% if checkout_actual %}
+                    <div style="background:#FFF7ED; border:1px solid #FDBA74; border-radius:8px; padding:12px; margin-bottom:10px;">
+                        <div><strong>Siguiente objeto:</strong> {{ checkout_actual.nombre }}</div>
+                        <div>Cantidad: {{ checkout_actual.cantidad }}</div>
+                        <div>Categoría: {{ checkout_actual.categoria }}</div>
+                        <div style="display:flex; gap:8px; margin-top:10px;">
+                            <form action="/inventario/check_item" method="post" style="margin:0;">
+                                <input type="hidden" name="id" value="{{ checkout_actual.id }}">
+                                <button type="submit">Sí lo tenemos</button>
+                            </form>
+                            <form action="/inventario/check_item_missing" method="post" style="margin:0;">
+                                <input type="hidden" name="id" value="{{ checkout_actual.id }}">
+                                <button type="submit" style="background:#F59E0B; color:white;">No lo tenemos</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="color:#166534; font-weight:bold;">Check out completo. Todo está marcado.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="inventario-layout" style="margin-top:20px;">
+                {% for categoria in categorias_inventario %}
+                {% set categoria_class = 'mecanica' if categoria == 'Mecánica' else ('electrica' if categoria == 'Eléctrica' else ('scouting' if categoria == 'Scouting' else 'negocios')) %}
+                <div class="inventario-card {{ categoria_class }}">
+                    <h3 style="margin-top:0;">{{ categoria }} <span class="inventario-badge">{{ inventario_por_categoria[categoria]|length }}</span></h3>
+                    {% if inventario_por_categoria[categoria] %}
+                        {% for item in inventario_por_categoria[categoria] %}
+                        <div class="inventario-item">
+                            <div>
+                                <strong>{{ item.nombre }}</strong> x{{ item.cantidad }}
+                                {% if item.checked_out %}
+                                <div style="font-size:12px; color:#166534;">Revisado para check out</div>
+                                {% else %}
+                                <div style="font-size:12px; color:#B45309;">Pendiente por revisar</div>
+                                {% endif %}
+                            </div>
+                            <form action="/inventario/eliminar" method="post" style="margin:0;">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" style="background:#FCA5A5; color:#7F1D1D;">Borrar</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <p style="color:#6B7280;">Sin objetos en esta categoría.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -599,8 +846,27 @@
         </div>
     </div>
 
+    <!-- Modal para confirmar reinicio total -->
+    <div id="reset-confirm-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos? ⚠️</h3>
+            <p>Para confirmar que si, nombre de la mascota de Rigo</p>
+            <input id="reset-confirm-input" class="modal-input" placeholder="Escribe el nombre" />
+            <div class="modal-actions">
+                <button id="reset-confirm-cancel">Cancelar</button>
+                <button id="reset-confirm-ok">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Botón de reiniciar -->
     <button class="reiniciar-btn" onclick="confirmarReiniciar()">🔄 Reiniciar Todo</button>
+
+    <!-- Botones externos de inventario -->
+    <div class="inventario-reset-group">
+        <button class="inventario-reset-btn" onclick="confirmarReiniciarInventario()">📦 Reiniciar Todo Inventario</button>
+        <button class="inventario-reset-btn" style="background:linear-gradient(135deg,#0284C7,#0EA5E9); box-shadow:0 4px 12px rgba(14,165,233,0.35);" onclick="confirmarReiniciarCheckout()">✅ Reiniciar Check Out</button>
+    </div>
 
     <!-- Botón de información -->
     <button class="info-btn" onclick="mostrarInformacion()">ℹ️ Información</button>
@@ -639,17 +905,73 @@
                     const mainTitle = document.getElementById('main-title');
                     if(mainTitle){
                         if(target === 'panel-matches') mainTitle.textContent = '📝 Registro de Matches 📝';
+                        else if(target === 'panel-inventario') mainTitle.textContent = '📦 Inventario 📦';
+                        else if(target === 'panel-prestados') mainTitle.textContent = '📋 Cosas Prestadas 📋';
                         else mainTitle.textContent = '🔋 Registro de Pilas 🔋';
                     }
+
+                    updateInventoryResetButtonsVisibility(target);
                 });
             });
+
+            // Reabrir pestaña activa según query param del backend
+            const activeTab = '{{ active_tab }}';
+            const activeInvSection = '{{ active_inv_section }}';
+            if(activeTab && activeTab !== 'pilas'){
+                const map = {
+                    matches: 'panel-matches',
+                    prestados: 'panel-prestados',
+                    inventario: 'panel-inventario'
+                };
+                const target = map[activeTab];
+                const tabToOpen = target ? document.querySelector(`.tab[data-target="${target}"]`) : null;
+                if(tabToOpen) tabToOpen.click();
+            }
+
+            const activeTabEl = document.querySelector('.tab.active');
+            updateInventoryResetButtonsVisibility(activeTabEl ? activeTabEl.getAttribute('data-target') : 'panel-pilas');
+
+            // Mantener abierta la sección de inventario tras enviar formulario.
+            if (activeTab === 'inventario' && (activeInvSection === 'checkin' || activeInvSection === 'checkout')) {
+                toggleInventarioSection(activeInvSection);
+            }
         });
 
         function confirmarReiniciar() {
-            if (confirm("⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos?\n ⚠️ No deberías hacerlo por nada en teoría ⚠️\n• ")) {
-                // Si el usuario confirma, enviar formulario
-                document.getElementById('reiniciarForm').submit();
+            const modal = document.getElementById('reset-confirm-modal');
+            const input = document.getElementById('reset-confirm-input');
+            if (!modal || !input) return;
+            input.value = '';
+            modal.style.display = 'flex';
+            setTimeout(() => input.focus(), 0);
+        }
+
+        function cerrarModalReinicioTotal() {
+            const modal = document.getElementById('reset-confirm-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function confirmarModalReinicioTotal() {
+            const input = document.getElementById('reset-confirm-input');
+            const clave = input ? input.value.trim() : '';
+            if (clave !== 'Nala') {
+                alert('Clave incorrecta. No se reinició nada.');
+                return;
             }
+
+            // Limpiar almacenamiento local para reinicio completo.
+            localStorage.removeItem('overpilas_matches_v1');
+            localStorage.removeItem('overpilas_prestados_v1');
+            localStorage.removeItem('overpilas_devueltos_v1');
+            sessionStorage.removeItem('overpilas_matches_auth');
+            cerrarModalReinicioTotal();
+            document.getElementById('reiniciarForm').submit();
+        }
+
+        function updateInventoryResetButtonsVisibility(target) {
+            const group = document.querySelector('.inventario-reset-group');
+            if (!group) return;
+            group.style.display = (target === 'panel-inventario') ? 'flex' : 'none';
         }
 
         function mostrarInformacion() {
@@ -659,14 +981,54 @@
 - Marcar la pila en "Pila en Uso" cuando la uses.
 - Al retirarla, registrar en "Recibir Pila" (cooldown 30 min).
 - Las pilas listas se ordenan por tiempo sin conectar (más antiguas primero).
-- Marcar si se ganó o perdió la partida
+- En "Matches", marca resultado (Win/Loose) cuando termine cada match.
+- En "Inventario" usa "Check In" para agregar objetos y "Check Out" para verificarlos.
+- En Check Out puedes marcar "Sí lo tenemos" o "No lo tenemos" (se vuelve a preguntar al final).
 - "Reiniciar Todo" borra TODOS los datos.
-
-Usar desde una sola computadora o sincronizar manualmente el archivo JSON.
+- "Reiniciar Todo Inventario" borra solo inventario.
+- "Reiniciar Check Out" reinicia solo el estado de revisión.
 
 Contacto: Rigo`;
 
             alert(info);
+        }
+
+        function confirmarReiniciarInventario() {
+            if (confirm("⚠️¿Seguro que quieres reiniciar TODO el inventario?")) {
+                document.getElementById('reiniciarInventarioForm').submit();
+            }
+        }
+
+        function confirmarReiniciarCheckout() {
+            if (confirm("⚠️ ¿Seguro que quieres reiniciar el check out?")) {
+                document.getElementById('reiniciarCheckoutForm').submit();
+            }
+        }
+
+        function toggleInventarioSection(section) {
+            const controles = document.getElementById('inventario-controles');
+            const checkinCard = document.getElementById('inventario-checkin-card');
+            const checkoutCard = document.getElementById('inventario-checkout-card');
+            if (!controles || !checkinCard || !checkoutCard) return;
+
+            // Si vuelven a picar la misma sección visible, colapsar todo.
+            const isCheckinOpen = checkinCard.style.display === 'block';
+            const isCheckoutOpen = checkoutCard.style.display === 'block';
+            if ((section === 'checkin' && isCheckinOpen) || (section === 'checkout' && isCheckoutOpen)) {
+                checkinCard.style.display = 'none';
+                checkoutCard.style.display = 'none';
+                controles.style.display = 'none';
+                return;
+            }
+
+            controles.style.display = 'flex';
+            if (section === 'checkin') {
+                checkinCard.style.display = 'block';
+                checkoutCard.style.display = 'none';
+            } else if (section === 'checkout') {
+                checkinCard.style.display = 'none';
+                checkoutCard.style.display = 'block';
+            }
         }
 
         // Matches JS - client-side localStorage
@@ -1051,10 +1413,31 @@ Contacto: Rigo`;
                 cancel.addEventListener('click', ()=>{ closeModal(); });
             });
         })();
+
+        // Reinicio total modal logic
+        (function(){
+            document.addEventListener('DOMContentLoaded', ()=>{
+                const ok = document.getElementById('reset-confirm-ok');
+                const cancel = document.getElementById('reset-confirm-cancel');
+                const input = document.getElementById('reset-confirm-input');
+
+                if (ok) ok.addEventListener('click', confirmarModalReinicioTotal);
+                if (cancel) cancel.addEventListener('click', cerrarModalReinicioTotal);
+                if (input) {
+                    input.addEventListener('keydown', (e)=>{
+                        if (e.key === 'Enter') confirmarModalReinicioTotal();
+                    });
+                }
+            });
+        })();
     </script>
 
     <!-- Formulario oculto para reiniciar -->
     <form id="reiniciarForm" action="/reiniciar" method="post" style="display: none;">
+    </form>
+    <form id="reiniciarInventarioForm" action="/inventario/reiniciar" method="post" style="display: none;">
+    </form>
+    <form id="reiniciarCheckoutForm" action="/inventario/reiniciar_checkout" method="post" style="display: none;">
     </form>
     <!-- (Match enviada button is embedded in the Next Match card) -->
 </body>
