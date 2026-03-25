@@ -1,0 +1,22 @@
+Build instructions for Windows and Linux Ubuntu LTS:
+
+1. Windows Executable:
+   - Install Python and pip if not already installed.
+   - Install PyInstaller: pip install pyinstaller
+   - Run: pyinstaller --onefile --add-data "templates;templates" --add-data "static;static" app.py
+   - The executable will be in the dist/ folder as app.exe.
+   - To run: dist\app.exe
+
+2. Linux Ubuntu Executable:
+   - Install Python and pip if not already installed.
+   - Install PyInstaller: pip install pyinstaller
+   - Run: pyinstaller --onefile --add-data "templates:templates" --add-data "static:static" app.py
+   - The executable will be in the dist/ folder as app (no .exe).
+   - To run: ./dist/app
+
+Notes:
+- The --add-data option ensures templates and static folders are included.
+- You may need to install build-essential and python3-dev on Ubuntu: sudo apt-get install build-essential python3-dev
+- For Flask apps, the executable will run as a local server. Open your browser to http://127.0.0.1:5000
+- If you use other files (e.g., pilas.json), ensure they are handled in your code or included in the build.
+- For cross-platform builds, run PyInstaller on each OS.

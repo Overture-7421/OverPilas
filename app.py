@@ -12,7 +12,7 @@ else:
 data_file = 'pilas.json'
 
 # Lista fija de nombres
-nombres_fijos = ["Ada","Jorge","Western Bacon", "Bolillo", "Marcela", "Billie", "Simi","Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
+nombres_fijos = ["Western Bacon", "Bolillo", "Marcela", "Billie", "Simi","Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
                 "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
                 "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
