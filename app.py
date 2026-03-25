@@ -1,8 +1,14 @@
 from flask import Flask, request, render_template, redirect
-import json, os
+import json, os, sys
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
+if getattr(sys, 'frozen', False):
+    _base = sys._MEIPASS
+    app = Flask(__name__,
+                template_folder=os.path.join(_base, 'templates'),
+                static_folder=os.path.join(_base, 'static'))
+else:
+    app = Flask(__name__)
 data_file = 'pilas.json'
 
 # Lista fija de nombres
