@@ -6,6 +6,8 @@ __pycache__/
 *.env
 venv/
 ENV/
+.venv_linux/
+OverPilas.spec
 build/
 dist/
 *.egg-info/
