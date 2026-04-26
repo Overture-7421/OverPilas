@@ -527,7 +527,7 @@
     <!-- Imagen superior derecha -->
     <img src="/static/logo.png" alt="Logo" class="imagen-superior" onerror="this.style.display='none'">
 
-    <h1 id="main-title">🔋 Registro de Pilas 🔋</h1>
+    <h1 id="main-title">Registro de Pilas</h1>
 
     <!-- Pestañas -->
     <div class="tabs" role="tablist">
@@ -545,7 +545,7 @@
 
         <div class="formularios-container">
         <div class="registro-section">
-            <h2>Registrar Pila 📝</h2>
+            <h2>Registrar Pila</h2>
             <form action="/agregar" method="post">
                 <div class="campo-linea">
                     <label>Nombre:</label>
@@ -572,7 +572,7 @@
         </div>
 
         <div class="pila-uso-section">
-            <h2>Pila en Uso ⚡️</h2>
+            <h2>Pila en Uso</h2>
             <form action="/pila_en_uso" method="post">
                 Seleccionar pila en uso:
                 <select name="nombre" required>
@@ -586,7 +586,7 @@
         </div>
 
         <div class="recibir-section">
-            <h2>Recibir Pila 🪫</h2>
+            <h2>Recibir Pila</h2>
             <form action="/recibir_pila" method="post">
                 Seleccionar pila recibida:
                 <select name="nombre" required>
@@ -849,7 +849,7 @@
     <!-- Modal para confirmar reinicio total -->
     <div id="reset-confirm-modal" class="modal-overlay" style="display:none;">
         <div class="modal-box">
-            <h3>⚠️ ¿Estás seguro de que quieres reiniciar TODOS los datos? ⚠️</h3>
+            <h3>¿Estás seguro de que quieres reiniciar TODOS los datos?</h3>
             <p>Para confirmar que si, nombre de la mascota de Rigo</p>
             <input id="reset-confirm-input" class="modal-input" placeholder="Escribe el nombre" />
             <div class="modal-actions">
@@ -860,16 +860,16 @@
     </div>
 
     <!-- Botón de reiniciar -->
-    <button class="reiniciar-btn" onclick="confirmarReiniciar()">🔄 Reiniciar Todo</button>
+    <button class="reiniciar-btn" onclick="confirmarReiniciar()">Reiniciar Todo</button>
 
     <!-- Botones externos de inventario -->
     <div class="inventario-reset-group">
-        <button class="inventario-reset-btn" onclick="confirmarReiniciarInventario()">📦 Reiniciar Todo Inventario</button>
-        <button class="inventario-reset-btn" style="background:linear-gradient(135deg,#0284C7,#0EA5E9); box-shadow:0 4px 12px rgba(14,165,233,0.35);" onclick="confirmarReiniciarCheckout()">✅ Reiniciar Check Out</button>
+        <button class="inventario-reset-btn" onclick="confirmarReiniciarInventario()">Reiniciar Todo Inventario</button>
+        <button class="inventario-reset-btn" style="background:linear-gradient(135deg,#0284C7,#0EA5E9); box-shadow:0 4px 12px rgba(14,165,233,0.35);" onclick="confirmarReiniciarCheckout()">Reiniciar Check Out</button>
     </div>
 
     <!-- Botón de información -->
-    <button class="info-btn" onclick="mostrarInformacion()">ℹ️ Información</button>
+    <button class="info-btn" onclick="mostrarInformacion()">Información</button>
 
     <script>
         // Tabs logic
@@ -904,10 +904,10 @@
                     // Cambiar título principal según pestaña
                     const mainTitle = document.getElementById('main-title');
                     if(mainTitle){
-                        if(target === 'panel-matches') mainTitle.textContent = '📝 Registro de Matches 📝';
-                        else if(target === 'panel-inventario') mainTitle.textContent = '📦 Inventario 📦';
-                        else if(target === 'panel-prestados') mainTitle.textContent = '📋 Cosas Prestadas 📋';
-                        else mainTitle.textContent = '🔋 Registro de Pilas 🔋';
+                        if(target === 'panel-matches') mainTitle.textContent = 'Registro de Matches';
+                        else if(target === 'panel-inventario') mainTitle.textContent = 'Inventario';
+                        else if(target === 'panel-prestados') mainTitle.textContent = 'Cosas Prestadas';
+                        else mainTitle.textContent = 'Registro de Pilas';
                     }
 
                     updateInventoryResetButtonsVisibility(target);
@@ -994,13 +994,13 @@ Contacto: Rigo`;
         }
 
         function confirmarReiniciarInventario() {
-            if (confirm("⚠️¿Seguro que quieres reiniciar TODO el inventario?")) {
+            if (confirm("¿Seguro que quieres reiniciar TODO el inventario?")) {
                 document.getElementById('reiniciarInventarioForm').submit();
             }
         }
 
         function confirmarReiniciarCheckout() {
-            if (confirm("⚠️ ¿Seguro que quieres reiniciar el check out?")) {
+            if (confirm("¿Seguro que quieres reiniciar el check out?")) {
                 document.getElementById('reiniciarCheckoutForm').submit();
             }
         }

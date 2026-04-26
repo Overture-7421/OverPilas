@@ -16,6 +16,7 @@ categorias_inventario = ["Mecánica", "Eléctrica", "Scouting", "Negocios"]
 # Lista fija de nombres
 nombres_fijos = ["Western Bacon", "Bolillo", "Marcela", "Billie", "Simi","Tlacua", "Jasper", "Caditos", "Timmy", "Thunderbird", 
                 "Miguelito", "Cesarín", "El tío", "Chopper", "Gaia", "Gipsy",
+                "Ada", "Jorge",
                 "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 def guardar_datos():
@@ -140,22 +141,22 @@ def index():
         else:
             listado.append({"nombre": nombre, "carga": "Sin datos", "ohms": "Sin datos"})
 
-    # Ordenar por Carga (mayor a menor) y luego por Ohms (menor a mayor)
+    # Ordenar por Ohms (menor a mayor) y luego por Carga (mayor a menor)
     def key_ordenamiento(p):
         try:
             carga = float(p['carga'])
         except:
             # "Sin datos" se coloca al final con carga muy baja
-            return (-1, 999999)
+            carga = -1
         
         try:
             ohms = float(p['ohms'])
         except:
-            # Si no hay ohms válidos, usar valor alto para que vaya al final del grupo de misma carga
+            # Si no hay ohms válidos, usar valor alto para que vaya al final
             ohms = 999999
         
-        # Retornar tupla: (carga negativa para orden descendente, ohms para orden ascendente)
-        return (-carga, ohms)
+        # Retornar tupla: (ohms para orden ascendente, carga negativa para orden descendente)
+        return (ohms, -carga)
     
     listado_ordenado = sorted(listado, key=key_ordenamiento)
 
